@@ -1,2 +1,3 @@
-# LiberaDebt
-Desktop app that processes a Excel spreadsheet with your debt info through an LLM to provide efficient payoff advice.
+> [!IMPORTANT]
+> LiberaDebt is in a pre-alpha state, and only suitable for use by developers.
+>
