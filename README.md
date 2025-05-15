@@ -6,7 +6,7 @@
 ### Dev Notes
 * Consider appending prompts & timestamps to an output file.
 ```go
-	outDir := flag.String("outDir", "$HOME", "Output directory to write out AI's response.")
+outDir := flag.String("outDir", "$HOME", "Output directory to write out AI's response.")
 ```
 
 ---
