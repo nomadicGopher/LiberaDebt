@@ -1,3 +1,8 @@
 #!/bin/bash
-cd ../
-go run * -income="\$1,234.56"
+
+# Remove log & data test files
+rm -f ./*.log
+
+cd ..
+
+go run . -income="\$1,234"

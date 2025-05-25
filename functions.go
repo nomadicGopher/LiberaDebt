@@ -9,6 +9,22 @@ import (
 	"strings"
 )
 
+func promptOllama(incomeFlt float64, goal string) {
+	requestDetails := OllamaRequest{
+		Url: "http://loalhost:11434/api/chat",
+		Headers: Headers{
+			ContentType: "application/json",
+		},
+		Data: Data{
+			Model:  "",
+			Prompt: "",
+			Stream: true,
+		},
+	}
+
+	log.Print(requestDetails) // TODO: Verify
+}
+
 func determineIncome(income string) (incomeFlt float64) {
 	// Check if flag was passed at runtime, if so no need to prompt the user.
 	if income == "" {

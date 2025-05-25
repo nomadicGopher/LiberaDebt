@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/outrigdev/outrig"
@@ -19,9 +18,7 @@ func main() {
 	incomeFlt := determineIncome(*income)
 	*goal = determineGoal(*goal)
 
-	// TODO: func promptOllama(){}
-
-	fmt.Sprintf("income: %.2f | goal: %s\n", incomeFlt, *goal)
+	promptOllama(incomeFlt, *goal)
 
 	os.Exit(0)
 }

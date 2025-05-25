@@ -1,0 +1,14 @@
+{
+    // https://go.microsoft.com/fwlink/?LinkId=733558
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "clean-up",
+            "type": "shell",
+            "presentation": {
+                "reveal": "never",
+            },
+            "command": "rm -f .vscode/*.log"
+        }
+    ]
+}

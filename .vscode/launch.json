@@ -1,0 +1,17 @@
+{
+    // https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "preLaunchTask": "clean-up",
+            "program": ".",
+            "args": [
+                "-income=\"$1,234\""
+            ]
+        }
+    ]
+}
