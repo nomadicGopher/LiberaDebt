@@ -3,12 +3,6 @@
 
 [**Kanban Board**](https://github.com/users/nomadicGopher/projects/6/views/2)
 
-### Dev Notes
-* Consider appending prompts & timestamps to an output file.
-```go
-outDir := flag.String("outDir", "$HOME", "Output directory to write out AI's response.")
-```
-
 ---
 
 ### Support This Developer
