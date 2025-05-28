@@ -1,5 +1,8 @@
 > [!IMPORTANT]
 > LiberaDebt is in a pre-alpha state, and only suitable for use by developers.
+> 
+> **Progress to MVP**  
+> ███████░░░ (70%)
 
 [**Kanban Board**](https://github.com/users/nomadicGopher/projects/6/views/2)
 
