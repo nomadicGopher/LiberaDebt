@@ -35,19 +35,24 @@ func main() {
 	financesPath := flag.String("finances", "./finances.xlsx", "Full-path to financial spreadsheet.")
 	flag.Parse()
 
-	incomeFlt := determineIncome(*income)
-	*goal = determineGoal(*goal, defaultGoal)
+	incomeFlt, err := determineIncome(*income)
+	checkErr(err)
 
-	financialInfo := getFinancialInfo(*financesPath)
+	*goal, err = determineGoal(*goal, defaultGoal)
+	checkErr(err)
 
-	promptOllama(incomeFlt, financialInfo, *goal)
+	financialInfo, err := getFinancialInfo(*financesPath)
+	checkErr(err)
+
+	err = promptOllama(incomeFlt, financialInfo, *goal)
+	checkErr(err)
 
 	os.Exit(0)
 }
 
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one. Then the value is
 // stripped of special characters and assigned to a float to ensure it is valid.
-func determineIncome(income string) (incomeFlt float64) {
+func determineIncome(income string) (incomeFlt float64, _ error) {
 	// Check if flag was passed at runtime. If so, no need to prompt the user.
 	if income == "" {
 		fmt.Println("What is your monthly income (after taxes & deductions)?")
@@ -71,14 +76,14 @@ func determineIncome(income string) (incomeFlt float64) {
 		log.Fatalln("Error formatting income: ", err)
 	}
 
-	return incomeFlt
+	return incomeFlt, nil
 }
 
 // determineGoal checks the stdIn flags for a non-default goal. If it's still the default then the user is prompted for a new goal or to verify the default.
-func determineGoal(goal, defaultGoal string) string {
+func determineGoal(goal, defaultGoal string) (string, error) {
 	// Check if flag was passed at runtime, if so no need to prompt the user.
 	if goal != defaultGoal {
-		return goal
+		return goal, nil
 	}
 
 	// Prompt the user for their desired financial goal.
@@ -94,18 +99,18 @@ func determineGoal(goal, defaultGoal string) string {
 
 	// User chose the default goal.
 	if goal == "" {
-		return defaultGoal
+		return defaultGoal, nil
 	}
 
-	return goal
+	return goal, nil
 }
 
-func getFinancialInfo(financesPath string) (financialInfo string) {
+func getFinancialInfo(financesPath string) (financialInfo string, _ error) {
 	// TODO: Use github.com/tealeg/xlsx to extract sheet info into FinancialInfo and then unmarshall it into a string for ollama to read.
-	return financialInfo
+	return financialInfo, nil
 }
 
-func promptOllama(incomeFlt float64, financialInfo, goal string) {
+func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
 		log.Fatal("Error establishing connection to AI: ", err)
@@ -143,4 +148,11 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) {
 	}
 
 	log.Println("Response complete.")
+	return nil
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
