@@ -118,9 +118,13 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 
 	ctx := context.Background()
 
+	// Ensure model exists in Ollama
+	const model = "qwen3:0.6b"
+
 	modelReq := &ollama.PullRequest{
-		Model: "qwen3:0.6b",
+		Model: model,
 	}
+
 	progressFunc := func(resp ollama.ProgressResponse) error {
 		fmt.Printf("Progress: status=%v, total=%v, completed=%v\n", resp.Status, resp.Total, resp.Completed)
 		return nil
@@ -133,7 +137,7 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 
 	// Generate response
 	respReq := &ollama.GenerateRequest{
-		Model:  "qwen3.0:0.6b",
+		Model:  model,
 		Prompt: fmt.Sprintf("I make $%.2f a month. My financial info is: %s. My goal is: %s. How can i most efficiently accomplish this?", incomeFlt, financialInfo, goal),
 	}
 
