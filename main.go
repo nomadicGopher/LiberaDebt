@@ -62,7 +62,7 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 			income = scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
-			log.Fatalln("Error reading income response: ", err)
+			return 0, fmt.Errorf("error reading income response: %v", err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 	var err error
 	incomeFlt, err = strconv.ParseFloat(income, 64)
 	if err != nil {
-		log.Fatalln("Error formatting income: ", err)
+		return 0, fmt.Errorf("error formatting income: %v", err)
 	}
 
 	return incomeFlt, nil
@@ -94,7 +94,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 		goal = scanner.Text()
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalln("Error reading goal response: ", err)
+		return "", fmt.Errorf("error reading goal response: %v", err)
 	}
 
 	// User chose the default goal.
@@ -113,7 +113,7 @@ func getFinancialInfo(financesPath string) (financialInfo string, _ error) {
 func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
-		log.Fatal("Error establishing connection to AI: ", err)
+		return fmt.Errorf("error establishing connection to AI: %v", err)
 	}
 
 	ctx := context.Background()
@@ -128,7 +128,7 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 
 	err = client.Pull(ctx, modelReq, progressFunc)
 	if err != nil {
-		log.Fatalln("Error installing AI model: ", err)
+		return fmt.Errorf("error installing AI model: %v", err)
 	}
 
 	// Generate response
@@ -144,7 +144,7 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
-		log.Fatalln("Error generating AI response: ", err)
+		return fmt.Errorf("error generating AI response: %v", err)
 	}
 
 	log.Println("Response complete.")
