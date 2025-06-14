@@ -87,7 +87,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	}
 
 	// Prompt the user for their desired financial goal.
-	fmt.Println("What is your financial goal? (If you like the default option, then ust press enter.)\nDefault: ", defaultGoal)
+	fmt.Println("What is your financial goal? (If you like the default option, then just press enter.)\nDefault: ", defaultGoal)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
@@ -126,7 +126,7 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 	}
 
 	progressFunc := func(resp ollama.ProgressResponse) error {
-		fmt.Printf("Progress: status=%v, total=%v, completed=%v\n", resp.Status, resp.Total, resp.Completed)
+		fmt.Printf("Progress: %v ( %v / %v )\n", resp.Status, resp.Completed, resp.Total)
 		return nil
 	}
 
@@ -134,6 +134,8 @@ func promptOllama(incomeFlt float64, financialInfo, goal string) error {
 	if err != nil {
 		return fmt.Errorf("error installing AI model: %v", err)
 	}
+
+	fmt.Println("")
 
 	// Generate response
 	respReq := &ollama.GenerateRequest{
