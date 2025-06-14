@@ -108,24 +108,23 @@ func getFinancialInfo(financesPath string) (financialInfo string) {
 func promptOllama(incomeFlt float64, financialInfo, goal string) {
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
-		log.Fatal("Error establishing an AI client: ", err)
+		log.Fatal("Error establishing connection to AI: ", err)
 	}
 
 	ctx := context.Background()
 
-	// TODO: If user doesnt have model installed, install it
-	// modelReq := &ollama.PullRequest{
-	// 	Model: "qwen3.0:0.6b",
-	// }
-	// progressFunc := func(resp ollama.ProgressResponse) error {
-	// 	fmt.Printf("Progress: status=%v, total=%v, completed=%v\n", resp.Status, resp.Total, resp.Completed)
-	// 	return nil
-	// }
+	modelReq := &ollama.PullRequest{
+		Model: "qwen3:0.6b",
+	}
+	progressFunc := func(resp ollama.ProgressResponse) error {
+		fmt.Printf("Progress: status=%v, total=%v, completed=%v\n", resp.Status, resp.Total, resp.Completed)
+		return nil
+	}
 
-	// err = client.Pull(ctx, modelReq, progressFunc)
-	// if err != nil {
-	// 	log.Fatalln("Error installing AI model: ", err)
-	// }
+	err = client.Pull(ctx, modelReq, progressFunc)
+	if err != nil {
+		log.Fatalln("Error installing AI model: ", err)
+	}
 
 	// Generate response
 	respReq := &ollama.GenerateRequest{
