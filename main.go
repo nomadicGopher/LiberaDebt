@@ -14,16 +14,17 @@ import (
 	"github.com/tealeg/xlsx"
 )
 
-type FinancialInfo struct {
+type Obligations struct {
 	Obligations []Obligation `json:"obligations"`
 }
 
 type Obligation struct {
+	ID               int     `json:"id"`
 	Description      string  `json:"description"`
-	Type             string  `json:"type,omitempty"`
+	Type             string  `json:"type"`
 	Institution      string  `json:"institution,omitempty"`
-	RemainingBalance float64 `json:"remaining_balance"`
-	InterestRate     float64 `json:"interest_rate"`
+	RemainingBalance float64 `json:"remaining_balance,omitempty"`
+	InterestRate     float64 `json:"interest_rate,omitempty"`
 	MonthlyPayment   float64 `json:"monthly_payment"`
 	DayOfMonth       int     `json:"day_of_month,omitempty"`
 }
@@ -33,7 +34,7 @@ func main() {
 
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
-	financesPath := flag.String("finances", "./finances.xlsx", "Full-path to financial spreadsheet.")
+	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	llm := flag.String("llm", "qwen3:0.6b", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
 
@@ -43,10 +44,13 @@ func main() {
 	*goal, err = determineGoal(*goal, defaultGoal)
 	checkErr(err)
 
-	financialInfo, err := getFinancialInfo(*financesPath)
+	obligations, err := getObligations(*dataPath)
 	checkErr(err)
 
-	err = promptOllama(incomeFlt, financialInfo, *goal, *llm)
+	formattedObligations, err := formatObligations(obligations)
+	checkErr(err)
+
+	err = promptOllama(incomeFlt, formattedObligations, *goal, *llm)
 	checkErr(err)
 
 	os.Exit(0)
@@ -107,42 +111,41 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	return goal, nil
 }
 
-func getFinancialInfo(financesPath string) (financialInfo string, _ error) {
-	workBook, err := xlsx.OpenFile(financesPath)
+func getObligations(dataPath string) (obligations []Obligation, _ error) {
+	workBook, err := xlsx.OpenFile(dataPath)
 	if err != nil {
-		return "", fmt.Errorf("error opening XLSX workbook: %v", err)
+		return nil, fmt.Errorf("error opening XLSX workbook: %v", err)
 	}
 
 	sheet := workBook.Sheets[0]
 
-	if len(sheet.Rows) < 1 {
-		return "", fmt.Errorf("no obligations (data rows) exist in XLSX sheet.")
+	if len(sheet.Rows) < 2 {
+		return nil, fmt.Errorf("no obligations (data rows) exist in XLSX sheet")
 	}
-
-	var obligations []Obligation
 
 	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
 		remainingBalance, err := sheet.Rows[i].Cells[3].Float()
 		if err != nil {
-			return "", fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", i, err)
+			return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", i, err)
 		}
 
 		interestRate, err := sheet.Rows[i].Cells[4].Float()
 		if err != nil {
-			return "", fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", i, err)
+			return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", i, err)
 		}
 
 		monthlyPayment, err := sheet.Rows[i].Cells[5].Float()
 		if err != nil {
-			return "", fmt.Errorf("error formatting Monthly Payment from XLSX row %d: %v", i, err)
+			return nil, fmt.Errorf("error formatting Monthly Payment from XLSX row %d: %v", i, err)
 		}
 
 		dayOfMonth, err := sheet.Rows[i].Cells[6].Int()
 		if err != nil {
-			return "", fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", i, err)
+			return nil, fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", i, err)
 		}
 
 		obligation := Obligation{
+			ID:               i,
 			Description:      sheet.Rows[i].Cells[0].String(),
 			Type:             sheet.Rows[i].Cells[1].String(),
 			Institution:      sheet.Rows[i].Cells[2].String(),
@@ -151,17 +154,20 @@ func getFinancialInfo(financesPath string) (financialInfo string, _ error) {
 			MonthlyPayment:   monthlyPayment,
 			DayOfMonth:       dayOfMonth,
 		}
+
 		obligations = append(obligations, obligation)
 	}
 
-	log.Printf("%+v", obligations)
-
-	// TODO: build a string to be returned for each row in 1
-
-	return financialInfo, nil
+	return obligations, nil
 }
 
-func promptOllama(incomeFlt float64, financialInfo, goal, llm string) error {
+func formatObligations(obligations []Obligation) (formattedObligations string, _ error) {
+	// TODO
+
+	return formattedObligations, nil
+}
+
+func promptOllama(incomeFlt float64, formattedObligations, goal, llm string) error {
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("error establishing connection to AI: %v", err)
@@ -187,10 +193,16 @@ func promptOllama(incomeFlt float64, financialInfo, goal, llm string) error {
 	fmt.Println("")
 
 	// Generate response
+	const headers = "" // TODO in JSON format
+
 	respReq := &ollama.GenerateRequest{
-		Model:  llm,
-		Prompt: fmt.Sprintf("I make $%.2f a month. My financial info is: %s. My goal is: %s. How can i most efficiently accomplish my goal?", incomeFlt, financialInfo, goal),
+		Model: llm,
+		Prompt: fmt.Sprintf(`I make $%.2f a month. As a list of JSON formatted objects (starting with header info), my 
+financial obligations are: %s%s. My goal is: %s. How can i most efficiently accomplish my goal?`, incomeFlt, headers,
+			formattedObligations, goal),
 	}
+
+	log.Fatal()
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response)
