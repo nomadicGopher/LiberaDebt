@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -123,7 +124,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		return nil, fmt.Errorf("no obligations (data rows) exist in XLSX sheet")
 	}
 
-	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
+	for i := 2; i <= len(sheet.Rows); i++ { // skip header row // TODO: Test this
 		remainingBalance, err := sheet.Rows[i].Cells[3].Float()
 		if err != nil {
 			return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", i, err)
@@ -145,7 +146,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		}
 
 		obligation := Obligation{
-			ID:               i,
+			ID:               i - 1, // TODO: Validate this
 			Description:      sheet.Rows[i].Cells[0].String(),
 			Type:             sheet.Rows[i].Cells[1].String(),
 			Institution:      sheet.Rows[i].Cells[2].String(),
@@ -163,6 +164,14 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 
 func formatObligations(obligations []Obligation) (formattedObligations string, _ error) {
 	// TODO
+	for i, obligation := range obligations {
+		formattedObligation, err := json.Marshal(obligation)
+		if err != nil {
+			return "", fmt.Errorf("error marshaling obligation XLSX row #%d: %v", i+2, err) // TODO: Test i by omitting a required field
+		}
+
+		formattedObligations = formattedObligations + string(formattedObligation)
+	}
 
 	return formattedObligations, nil
 }
@@ -193,16 +202,16 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, llm string) err
 	fmt.Println("")
 
 	// Generate response
+	log.Fatal(formattedObligations) ///!
+
 	const headers = "" // TODO in JSON format
 
 	respReq := &ollama.GenerateRequest{
 		Model: llm,
 		Prompt: fmt.Sprintf(`I make $%.2f a month. As a list of JSON formatted objects (starting with header info), my 
-financial obligations are: %s%s. My goal is: %s. How can i most efficiently accomplish my goal?`, incomeFlt, headers,
+financial obligations are: %s%s. My goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, headers,
 			formattedObligations, goal),
 	}
-
-	log.Fatal()
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response)
