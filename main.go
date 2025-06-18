@@ -52,8 +52,6 @@ func main() {
 
 	err = promptOllama(incomeFlt, formattedObligations, *goal, *modelName)
 	checkErr(err)
-
-	os.Exit(0)
 }
 
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
@@ -112,6 +110,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	return goal, nil
 }
 
+// getObligations fetches data from obligations.xlsx & reads them into memory for use in other functions.
 func getObligations(dataPath string) (obligations []Obligation, _ error) {
 	workBook, err := xlsx.OpenFile(dataPath)
 	if err != nil {
@@ -207,6 +206,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 	return obligations, nil
 }
 
+// formatObligations concatenates xlsx.rows (obligations) into a single string which Ollama can understand.
 func formatObligations(obligations []Obligation) (formattedObligations string, _ error) {
 	for i, obligation := range obligations {
 		formattedObligation, err := json.Marshal(obligation)
@@ -220,6 +220,7 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
+// promptOllama sets up the connection with Ollama & generates a request/response to stdOut.
 func promptOllama(incomeFlt float64, formattedObligations, goal, modelName string) error {
 	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
@@ -287,6 +288,7 @@ goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formatt
 	return nil
 }
 
+// checkErr is a helper function to halt the program on error.
 func checkErr(err error) {
 	if err != nil {
 		log.Fatalln(err)
