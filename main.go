@@ -20,7 +20,6 @@ type Obligations struct {
 }
 
 type Obligation struct {
-	ID               int     `json:"id"`
 	Description      string  `json:"description"`
 	Type             string  `json:"type"`
 	Institution      string  `json:"institution,omitempty"`
@@ -124,7 +123,21 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		return nil, fmt.Errorf("no obligations (data rows) exist in XLSX sheet")
 	}
 
-	for i := 2; i <= len(sheet.Rows); i++ { // skip header row // TODO: Test this
+	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
+		xlsxRowNumber := i + 1
+
+		if sheet.Rows[i].Cells[0].Value == "" &&
+			(sheet.Rows[i].Cells[1].Value != "" ||
+				sheet.Rows[i].Cells[2].Value != "" ||
+				sheet.Rows[i].Cells[3].Value != "" ||
+				sheet.Rows[i].Cells[4].Value != "" ||
+				sheet.Rows[i].Cells[5].Value != "" ||
+				sheet.Rows[i].Cells[6].Value != "") {
+			return nil, fmt.Errorf("xlsx row %d is required but is empty", xlsxRowNumber)
+		} else if sheet.Rows[i].Cells[0].Value == "" {
+			break // End of data despite number of rows in sheet since Description is required.
+		}
+
 		var (
 			institution                    string = sheet.Rows[i].Cells[2].String()
 			remainingBalance, interestRate float64
@@ -132,61 +145,55 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			err                            error
 		)
 
+		// Ensure input values convert to their appropriate types
 		if sheet.Rows[i].Cells[3].Value != "" {
 			remainingBalance, err = sheet.Rows[i].Cells[3].Float()
 			if err != nil {
-				return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", i+1, err)
+				return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
 		if sheet.Rows[i].Cells[4].Value != "" {
 			interestRate, err = sheet.Rows[i].Cells[4].Float()
 			if err != nil {
-				return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", i+1, err)
+				return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
 		monthlyPayment, err := sheet.Rows[i].Cells[5].Float()
 		if err != nil {
-			return nil, fmt.Errorf("error formatting Monthly Payment (required) from XLSX row %d: %v", i+1, err)
+			return nil, fmt.Errorf("error formatting Monthly Payment (required) from XLSX row %d: %v", xlsxRowNumber, err)
 		}
 
 		if sheet.Rows[i].Cells[4].Value != "" {
 			dayOfMonth, err = sheet.Rows[i].Cells[6].Int()
 			if err != nil {
-				return nil, fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", i+1, err)
+				return nil, fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
+		// Required Fields
 		obligation := Obligation{
-			ID:             i - 1,                           // TODO: Validate this
-			Description:    sheet.Rows[i].Cells[0].String(), // Required
-			Type:           sheet.Rows[i].Cells[1].String(), // Required
-			MonthlyPayment: monthlyPayment,                  // Required
+			Description:    sheet.Rows[i].Cells[0].String(),
+			Type:           sheet.Rows[i].Cells[1].String(),
+			MonthlyPayment: monthlyPayment,
 		}
 
+		// Optional Fields
 		if institution != "" {
-			obligation = Obligation{
-				Institution: institution, // Optional
-			}
+			obligation.Institution = institution
 		}
 
 		if remainingBalance != 0.00 {
-			obligation = Obligation{
-				RemainingBalance: remainingBalance, // Optional
-			}
+			obligation.RemainingBalance = remainingBalance
 		}
 
 		if interestRate != 0.00 {
-			obligation = Obligation{
-				InterestRate: interestRate, // Optional
-			}
+			obligation.InterestRate = interestRate
 		}
 
 		if dayOfMonth != 0 {
-			obligation = Obligation{
-				DayOfMonth: dayOfMonth, // Optional
-			}
+			obligation.DayOfMonth = dayOfMonth
 		}
 
 		obligations = append(obligations, obligation)
@@ -238,6 +245,10 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, llm string) err
 	log.Fatal(formattedObligations) ///!
 
 	const headers = "" // TODO in JSON format
+
+	log.Fatalln(fmt.Sprintf(`I make $%.2f a month. As a list of JSON formatted objects (starting with header info), my 
+financial obligations are: %s%s. My goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, headers,
+		formattedObligations, goal))
 
 	respReq := &ollama.GenerateRequest{
 		Model: llm,
