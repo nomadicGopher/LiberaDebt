@@ -126,18 +126,23 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
 		xlsxRowNumber := i + 1
 
+		// Ensure that required fields are populated with more than ""
 		if sheet.Rows[i].Cells[0].Value == "" &&
-			(sheet.Rows[i].Cells[1].Value != "" ||
-				sheet.Rows[i].Cells[2].Value != "" ||
-				sheet.Rows[i].Cells[3].Value != "" ||
-				sheet.Rows[i].Cells[4].Value != "" ||
-				sheet.Rows[i].Cells[5].Value != "" ||
-				sheet.Rows[i].Cells[6].Value != "") {
-			return nil, fmt.Errorf("xlsx row %d is required but is empty", xlsxRowNumber)
+			(sheet.Rows[i].Cells[1].Value != "" || len(sheet.Rows[i].Cells) > 2) {
+			return nil, fmt.Errorf("xlsx row %d, Description is required but is empty", xlsxRowNumber)
 		} else if sheet.Rows[i].Cells[0].Value == "" {
 			break // End of data despite number of rows in sheet since Description is required.
 		}
 
+		if sheet.Rows[i].Cells[1].Value == "" {
+			return nil, fmt.Errorf("xlsx row %d, Type is required but is empty", xlsxRowNumber)
+		}
+
+		if sheet.Rows[i].Cells[5].Value == "" {
+			return nil, fmt.Errorf("xlsx row %d, Monthly Amount is required but is empty", xlsxRowNumber)
+		}
+
+		// Ensure input values convert to their appropriate types
 		var (
 			institution                    string = sheet.Rows[i].Cells[2].String()
 			remainingBalance, interestRate float64
@@ -145,7 +150,6 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			err                            error
 		)
 
-		// Ensure input values convert to their appropriate types
 		if sheet.Rows[i].Cells[3].Value != "" {
 			remainingBalance, err = sheet.Rows[i].Cells[3].Float()
 			if err != nil {
@@ -236,7 +240,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, llm string) err
 
 	err = client.Pull(ctx, modelReq, progressFunc)
 	if err != nil {
-		return fmt.Errorf("error installing AI model: %v", err)
+		return fmt.Errorf("error installing AI model (if missing). %v. Ensure that Ollama is running by using $ ollama serve", err)
 	}
 
 	fmt.Println("")
