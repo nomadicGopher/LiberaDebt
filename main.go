@@ -35,7 +35,7 @@ func main() {
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	llm := flag.String("llm", "qwen3:0.6b", "What Large Language Model will be used via Ollama?")
+	modelName := flag.String("modelName", "qwen3:0.6b", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
@@ -50,14 +50,14 @@ func main() {
 	formattedObligations, err := formatObligations(obligations)
 	checkErr(err)
 
-	err = promptOllama(incomeFlt, formattedObligations, *goal, *llm)
+	err = promptOllama(incomeFlt, formattedObligations, *goal, *modelName)
 	checkErr(err)
 
 	os.Exit(0)
 }
 
-// determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one. Then the value is
-// stripped of special characters and assigned to a float to ensure it is valid.
+// determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
+// Then the value is stripped of special characters and assigned to a float to ensure it is valid.
 func determineIncome(income string) (incomeFlt float64, _ error) {
 	// Check if flag was passed at runtime. If so, no need to prompt the user.
 	if income == "" {
@@ -85,7 +85,8 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 	return incomeFlt, nil
 }
 
-// determineGoal checks the stdIn flags for a non-default goal. If it's still the default then the user is prompted for a new goal or to verify the default.
+// determineGoal checks the stdIn flags for a non-default goal.
+// If it's still the default then the user is prompted for a new goal or to verify the default.
 func determineGoal(goal, defaultGoal string) (string, error) {
 	// Check if flag was passed at runtime, if so no need to prompt the user.
 	if goal != defaultGoal {
@@ -93,7 +94,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	}
 
 	// Prompt the user for their desired financial goal.
-	fmt.Println("What is your financial goal? (If you like the default option, then just press enter.)\nDefault: ", defaultGoal)
+	fmt.Println("What is your financial goal? (If you like the default option, press enter.)\nDefault: ", defaultGoal)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
@@ -207,11 +208,10 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 }
 
 func formatObligations(obligations []Obligation) (formattedObligations string, _ error) {
-	// TODO
 	for i, obligation := range obligations {
 		formattedObligation, err := json.Marshal(obligation)
 		if err != nil {
-			return "", fmt.Errorf("error marshaling obligation XLSX row #%d: %v", i+2, err) // TODO: Test i by omitting a required field
+			return "", fmt.Errorf("error marshaling obligation XLSX row #%d: %v", i+2, err)
 		}
 
 		formattedObligations = formattedObligations + string(formattedObligation)
@@ -220,51 +220,63 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
-func promptOllama(incomeFlt float64, formattedObligations, goal, llm string) error {
+func promptOllama(incomeFlt float64, formattedObligations, goal, modelName string) error {
+	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
-		return fmt.Errorf("error establishing connection to AI: %v", err)
+		return fmt.Errorf("error creating an Ollama client: %v", err)
 	}
 
 	ctx := context.Background()
 
-	// Ensure model exists in Ollama
-	modelReq := &ollama.PullRequest{
-		Model: llm,
-	}
-
-	progressFunc := func(resp ollama.ProgressResponse) error {
-		fmt.Printf("Progress: %v ( %v / %v )\n", resp.Status, resp.Completed, resp.Total)
-		return nil
-	}
-
-	err = client.Pull(ctx, modelReq, progressFunc)
+	err = client.Heartbeat(ctx)
 	if err != nil {
-		return fmt.Errorf("error installing AI model (if missing). %v. Ensure that Ollama is running by using $ ollama serve", err)
+		return fmt.Errorf("error connecting to the Ollama server, ensure it's running elsewhere with $ ollama serve")
 	}
 
-	fmt.Println("")
+	// Ensure model exists
+	installed, err := client.List(ctx)
+	if err != nil {
+		return fmt.Errorf("error fetching the list of Ollama models: %v", err)
+	}
+
+	modelExists := false
+	for _, models := range installed.Models {
+		if models.Name == modelName {
+			modelExists = true
+		}
+	}
+	if !modelExists {
+		modelReq := &ollama.PullRequest{
+			Model: modelName,
+		}
+
+		progressFunc := func(resp ollama.ProgressResponse) error {
+			fmt.Printf("Progress: %v ( %v / %v )\n", resp.Status, resp.Completed, resp.Total)
+			return nil
+		}
+
+		err = client.Pull(ctx, modelReq, progressFunc)
+		if err != nil {
+			return fmt.Errorf("error installing AI model (if missing): %v", err)
+		}
+
+		fmt.Println("")
+	}
 
 	// Generate response
-	log.Fatal(formattedObligations) ///!
-
-	const headers = "" // TODO in JSON format
-
-	log.Fatalln(fmt.Sprintf(`I make $%.2f a month. As a list of JSON formatted objects (starting with header info), my 
-financial obligations are: %s%s. My goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, headers,
-		formattedObligations, goal))
-
 	respReq := &ollama.GenerateRequest{
-		Model: llm,
-		Prompt: fmt.Sprintf(`I make $%.2f a month. As a list of JSON formatted objects (starting with header info), my 
-financial obligations are: %s%s. My goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, headers,
-			formattedObligations, goal),
+		Model: modelName,
+		Prompt: fmt.Sprintf(`I make $%.2f a month. Here is a list of my financial obligtations in JSON format: %s. My 
+goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formattedObligations, goal),
 	}
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response)
 		return nil
 	}
+
+	log.Println("Communicating with AI...")
 
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
