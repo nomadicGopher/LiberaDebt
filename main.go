@@ -59,12 +59,13 @@ func main() {
 func determineIncome(income string) (incomeFlt float64, _ error) {
 	// Check if flag was passed at runtime. If so, no need to prompt the user.
 	if income == "" {
-		fmt.Println("What is your monthly income (after taxes & deductions)?")
+		fmt.Print("What is your monthly income (after taxes & deductions)? ")
 
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			income = scanner.Text()
 		}
+
 		if err := scanner.Err(); err != nil {
 			return 0, fmt.Errorf("error reading income response: %v", err)
 		}
@@ -92,7 +93,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	}
 
 	// Prompt the user for their desired financial goal.
-	fmt.Println("What is your financial goal? (If you like the default option, press enter.)\nDefault: ", defaultGoal)
+	fmt.Printf("What is your financial goal? If you like the default option (%s) then press enter. ", defaultGoal)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
@@ -261,8 +262,6 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		if err != nil {
 			return fmt.Errorf("error installing AI model (if missing): %v", err)
 		}
-
-		fmt.Println("")
 	}
 
 	// Generate response
@@ -284,7 +283,6 @@ goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formatt
 		return fmt.Errorf("error generating AI response: %v", err)
 	}
 
-	log.Println("Response complete.")
 	return nil
 }
 

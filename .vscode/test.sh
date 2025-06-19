@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Remove log & data test files
 rm -f ./*.log
 
 cd ..
