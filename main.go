@@ -35,7 +35,7 @@ func main() {
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	modelName := flag.String("modelName", "qwen3:0.6b", "What Large Language Model will be used via Ollama?")
+	model := flag.String("model", "0xroyce/Plutus-3B", "What Large Language Model will be used via Ollama?") // 0xroyce/plutus (8B) | martain7r/martain7r/finance-llama-8b:q4_k_m
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
@@ -50,7 +50,7 @@ func main() {
 	formattedObligations, err := formatObligations(obligations)
 	checkErr(err)
 
-	err = promptOllama(incomeFlt, formattedObligations, *goal, *modelName)
+	err = promptOllama(incomeFlt, formattedObligations, *goal, *model)
 	checkErr(err)
 }
 
@@ -221,7 +221,7 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 }
 
 // promptOllama sets up the connection with Ollama & generates a request/response to stdOut.
-func promptOllama(incomeFlt float64, formattedObligations, goal, modelName string) error {
+func promptOllama(incomeFlt float64, formattedObligations, goal, model string) error {
 	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
@@ -243,13 +243,13 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, modelName strin
 
 	modelExists := false
 	for _, models := range installed.Models {
-		if models.Name == modelName {
+		if models.Name == model {
 			modelExists = true
 		}
 	}
 	if !modelExists {
 		modelReq := &ollama.PullRequest{
-			Model: modelName,
+			Model: model,
 		}
 
 		progressFunc := func(resp ollama.ProgressResponse) error {
@@ -267,7 +267,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, modelName strin
 
 	// Generate response
 	respReq := &ollama.GenerateRequest{
-		Model: modelName,
+		Model: model,
 		Prompt: fmt.Sprintf(`I make $%.2f a month. Here is a list of my financial obligtations in JSON format: %s. My 
 goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formattedObligations, goal),
 	}
