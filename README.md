@@ -1,4 +1,27 @@
-TODO
+## Pre-requisites
+* [**Ollama**](https://ollama.com)
+
+## Usage
+1. Download the [obligations.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations.xlsx) template file.
+    * _Column headers that include `*` are required, otherwise it will be optional_
+    * _Reference [obligations_sample.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations_sample.xlsx) as an example of how to use the template._
+2. Fill out the financial obligations XLSX sheet which will contain 1 row per monthly obligation whether it is a utility bill, loan payment, lifestyle expense or credit card payment.
+3. After populating obligations.xlsx with data, ensure that it is stored in the same directory as the LiberaDebt executable program. See below if a different save location is desired.
+
+### Optional Command Line Arguments
+When running via the terminal with... `LiberaDebt -arg -arg ...`
+* `-data="/custom/path/to/file.xlsx"`
+    *	**Default:** `./obligations.xlsx` (same directory as executable program)
+* `-income="your monthly income"`
+    * It doesnt matter if `$`, `,` or empty spaces are included.
+    * User is prompted when this is not provided.
+*	`-goal="your custom financial goal"`
+    * ** Default:** Pay off debt as quickly and efficiently as possible while not straining my monthly budget.
+ 	  *	User is prompted when this is not different from the default.
+*	`-model="get from the Ollama website"`
+    *	**Default:** `0xroyce/Plutus-3B`
+    *	**Alternative 1:** `0xroyce/plutus` (8B)
+    * **Alternative 2:** `martain7r/finance-llama-8b:q4_k_m`
 
 ---
 
