@@ -9,11 +9,11 @@
 3. After populating obligations.xlsx with data, ensure that it is stored in the same directory as the LiberaDebt executable program. See below if a different save location is desired.
 
 ### Optional Command Line Arguments
-When running via the terminal with... `LiberaDebt -arg -arg ...`
+When running via the terminal with… `LiberaDebt -arg -arg …`
 * `-data="/custom/path/to/file.xlsx"`
     *	**Default:** `./obligations.xlsx` (same directory as executable program)
 * `-income="your monthly income"`
-    * It doesnt matter if `$`, `,` or empty spaces are included.
+    * It doesn't matter if `$`, `,` or empty spaces are included.
     * User is prompted when this is not provided.
 *	`-goal="your custom financial goal"`
     * ** Default:** Pay off debt as quickly and efficiently as possible while not straining my monthly budget.
