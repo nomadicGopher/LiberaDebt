@@ -72,7 +72,7 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 	}
 
 	// Verify income is a valid dollar amount by convetting to Float64.
-	replacer := strings.NewReplacer("$", "", ",", "")
+	replacer := strings.NewReplacer("$", " ", ",", "")
 	income = replacer.Replace(income)
 
 	var err error
