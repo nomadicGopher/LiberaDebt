@@ -35,7 +35,7 @@ func main() {
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	model := flag.String("model", "0xroyce/Plutus-3B", "What Large Language Model will be used via Ollama?") // 0xroyce/plutus (8B) | martain7r/martain7r/finance-llama-8b:q4_k_m
+	model := flag.String("model", "0xroyce/Plutus-3B", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
