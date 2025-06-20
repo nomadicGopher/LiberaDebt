@@ -5,11 +5,12 @@
 1. Download the [obligations.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations.xlsx) template file.
     * _Column headers that include `*` are required, otherwise it will be optional_
     * _Reference [obligations_sample.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations_sample.xlsx) as an example of how to use the template._
-2. Fill out the financial obligations XLSX sheet which will contain 1 row per monthly obligation whether it is a utility bill, loan payment, lifestyle expense or credit card payment.
-3. After populating obligations.xlsx with data, ensure that it is stored in the same directory as the LiberaDebt executable program. See below if a different save location is desired.
+2. Fill out the financial obligations XLSX sheet which will contain 1 row per monthly obligation whether it is a reoccuring bill, loan payment, lifestyle expense or credit card payment.
+    * Try to include as many obligations as possible like fuel, groceries, etc… so that the AI determines your remaining available balance accurately.
+4. After saving the data, ensure that the XLSX file is stored in the same directory as the LiberaDebt executable program when it is either double clicked or run via the command line. See below if a different storage location is desired.
 
 ### Optional Command Line Arguments
-When running via the terminal with… `LiberaDebt -arg -arg …`
+When running via the command line with… `LiberaDebt -arg -arg …`
 * `-data="/custom/path/to/file.xlsx"`
     *	**Default:** `./obligations.xlsx` (same directory as executable program)
 * `-income="your monthly income"`
