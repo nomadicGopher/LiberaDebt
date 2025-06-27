@@ -1,3 +1,10 @@
+<p align="center">
+   <img src="thumbnail.png" alt="LiberaDebt" width="50%"/>
+</p>
+
+# LiberaDebt
+A CLI app that passes your monthly financial obligations from an XLSX to Ollama to provide efficient payoff advice.
+
 ## Pre-requisites
 * [**Ollama**](https://ollama.com)
 
