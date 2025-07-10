@@ -10,8 +10,8 @@
             "preLaunchTask": "clean-up",
             "program": ".",
             "args": [
-                "-model=smollm:135m",
-                "-income=$1,234",
+                "-model=smollm2:135m",
+                "-income=$1,500",
                 "-goal=Pay off debt as quickly and efficiently as possible while not straining my monthly budget. ",
                 "-data=obligations_sample.xlsx"
             ]

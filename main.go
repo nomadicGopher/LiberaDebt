@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -35,7 +34,7 @@ func main() {
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	model := flag.String("model", "0xroyce/Plutus-3B", "What Large Language Model will be used via Ollama?")
+	model := flag.String("model", "deepseek-r1:1.5b", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
@@ -266,9 +265,8 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 
 	// Generate response
 	respReq := &ollama.GenerateRequest{
-		Model: model,
-		Prompt: fmt.Sprintf(`I make $%.2f a month. Here is a list of my financial obligtations in JSON format: %s. My 
-goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formattedObligations, goal),
+		Model:  model,
+		Prompt: fmt.Sprintf(`I make $%.2f a month. My goal is to %s. Stay focused on my goal. My financial obligtations in JSON format are %s. `, incomeFlt, goal, formattedObligations),
 	}
 
 	respFunc := func(resp ollama.GenerateResponse) error {
@@ -276,7 +274,7 @@ goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formatt
 		return nil
 	}
 
-	log.Println("Communicating with AI...")
+	fmt.Println("Communicating with AI...")
 
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
@@ -289,6 +287,7 @@ goal is: %s. How can I most efficiently accomplish my goal?`, incomeFlt, formatt
 // checkErr is a helper function to halt the program on error.
 func checkErr(err error) {
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

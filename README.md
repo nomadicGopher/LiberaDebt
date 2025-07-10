@@ -19,17 +19,15 @@ A CLI app that passes your monthly financial obligations from an XLSX to Ollama 
 ### Optional Command Line Arguments
 When running via the command line with… `LiberaDebt -arg -arg …`
 * `-data="/custom/path/to/file.xlsx"`
-    *	**Default:** `./obligations.xlsx` (same directory as executable program)
+    * **Default:** `./obligations.xlsx` (same directory as executable program)
 * `-income="your monthly income"`
     * It doesn't matter if `$`, `,` or empty spaces are included.
     * User is prompted when this is not provided.
 *	`-goal="your custom financial goal"`
-    * ** Default:** Pay off debt as quickly and efficiently as possible while not straining my monthly budget.
+    * **Default:** Pay off debt as quickly and efficiently as possible while not straining my monthly budget.
  	  *	User is prompted when this is not different from the default.
 *	`-model="get from the Ollama website"`
-    *	**Default:** `0xroyce/Plutus-3B`
-    *	**Alternative 1:** `0xroyce/plutus` (8B)
-    * **Alternative 2:** `martain7r/finance-llama-8b:q4_k_m`
+    * **Default:** `deepseek-r1:1.5b`
 
 ---
 
