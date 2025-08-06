@@ -38,7 +38,7 @@ When running via the command line with… `LiberaDebt -arg -arg …`
   <ul>
    <li><a href="https://github.com/sponsors/nomadicGopher" target="_blank">GitHub Sponsors</a></li>
    <li><a href="https://ko-fi.com/nomadicGopher" target="_blank">Ko-Fi</a></li>
-  </ul> 
+  </ul>
   Crypto currency wallets
   <ul>
       <li><b>ETH</b>: 0x7531d86D5Dbda398369ec43205F102e79B3c647A</li>
