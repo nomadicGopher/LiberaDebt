@@ -29,7 +29,7 @@ type Obligation struct {
 }
 
 func main() {
-	const defaultGoal = "Pay off debt as quickly and efficiently as possible while not straining my monthly budget."
+	const defaultGoal = "Determine a specific strategy including priorities & amounts to payoff my obligations as quickly & efficiently as possible without straining my monthly budget."
 
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
@@ -54,7 +54,7 @@ func main() {
 }
 
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
-// Then the value is stripped of special characters and assigned to a float to ensure it is valid.
+// Then the value is stripped of special characters & assigned to a float to ensure it is valid.
 func determineIncome(income string) (incomeFlt float64, _ error) {
 	// Check if flag was passed at runtime. If so, no need to prompt the user.
 	if income == "" {
@@ -266,7 +266,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 	// Generate response
 	respReq := &ollama.GenerateRequest{
 		Model:  model,
-		Prompt: fmt.Sprintf(`I make $%.2f a month. My goal is to %s. Stay focused on my goal. My financial obligtations in JSON format are %s. `, incomeFlt, goal, formattedObligations),
+		Prompt: fmt.Sprintf(`I make $%.2f a month. My financial obligtations in JSON format are %s. My goal is to %s. Stay focused on my goal.`, incomeFlt, formattedObligations, goal),
 	}
 
 	respFunc := func(resp ollama.GenerateResponse) error {
