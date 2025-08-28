@@ -70,6 +70,8 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 		}
 	}
 
+	fmt.Println()
+
 	// Verify income is a valid dollar amount by convetting to Float64.
 	replacer := strings.NewReplacer("$", " ", ",", "")
 	income = replacer.Replace(income)
@@ -92,7 +94,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	}
 
 	// Prompt the user for their desired financial goal.
-	fmt.Printf("What is your financial goal? If you like the default option (%s) then press enter. ", defaultGoal)
+	fmt.Printf("Default Goal: %s\nWhat is your financial goal? (Press enter for the default): ", defaultGoal)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
@@ -101,6 +103,8 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	if err := scanner.Err(); err != nil {
 		return "", fmt.Errorf("error reading goal response: %v", err)
 	}
+
+	fmt.Println()
 
 	// User chose the default goal.
 	if goal == "" {
@@ -274,7 +278,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		return nil
 	}
 
-	fmt.Println("Communicating with AI...")
+	fmt.Printf("Communicating with AI...\n\n")
 
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
