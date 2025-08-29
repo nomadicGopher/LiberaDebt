@@ -34,7 +34,7 @@ type Obligation struct {
 }
 
 func main() {
-	const defaultGoal = "Determine a specific prioritized strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible without straining my monthly budget"
+	const defaultGoal = "determine a strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
@@ -278,10 +278,24 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 	}
 
 	// Prepare to generate response with Ollama
-	respReq := &ollama.GenerateRequest{
-		Model:  model,
-		Prompt: fmt.Sprintf(`My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s. `, formattedObligations, incomeFlt, goal),
+	guidelines := []string{
+		"be concise and actionable",
+		"provide prioritization and amounts for each obligation",
+		"ensure recommendations fit within the user's monthly budget",
+		"explain reasoning for each step",
+		"don't give the user formulas to calculate",
+		"if an expense comperable to leisure or fun doesnt exist, assume a maximum of 5-10 percent of income",
 	}
+	guidelinesText := strings.Join(guidelines, ", ")
+
+	respReq := &ollama.GenerateRequest{
+		Model: model,
+		Prompt: fmt.Sprintf(
+			"My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s. Follow these guidelines: %s.",
+			formattedObligations, incomeFlt, goal, guidelinesText),
+	}
+
+	fmt.Println(respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
