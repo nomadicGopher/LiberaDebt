@@ -56,7 +56,10 @@ func main() {
 	formattedObligations, err := formatObligations(obligations)
 	checkErr(err)
 
-	err = promptOllama(incomeFlt, formattedObligations, *goal, *model, *outDir, *excludeThink)
+	responseBuilder, err := promptOllama(incomeFlt, formattedObligations, *goal, *model)
+	checkErr(err)
+
+	err = writeOutFile(*outDir, *goal, *excludeThink, responseBuilder)
 	checkErr(err)
 }
 
@@ -231,31 +234,25 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
-// removeThinkTags removes all <think>...</think> blocks and any surrounding blank lines.
-func removeThinkTags(s string) string {
-	re := regexp.MustCompile(`(?m)(\s*\n)?<think>[\s\S]*?</think>(\s*\n)?`)
-	return re.ReplaceAllString(s, "")
-}
-
 // promptOllama sets up the connection with Ollama & generates a request/response to stdOut and a .txt file.
-func promptOllama(incomeFlt float64, formattedObligations, goal, model, outDir string, excludeThink bool) error {
+func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (responseBuilder strings.Builder, _ error) {
 	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
-		return fmt.Errorf("error creating an Ollama client: %v", err)
+		return strings.Builder{}, fmt.Errorf("error creating an Ollama client: %v", err)
 	}
 
 	ctx := context.Background()
 
 	err = client.Heartbeat(ctx)
 	if err != nil {
-		return fmt.Errorf("error connecting to the Ollama server, ensure it's running elsewhere with $ ollama serve")
+		return strings.Builder{}, fmt.Errorf("error connecting to the Ollama server, ensure it's running elsewhere with $ ollama serve")
 	}
 
 	// Ensure model exists
 	installed, err := client.List(ctx)
 	if err != nil {
-		return fmt.Errorf("error fetching the list of Ollama models: %v", err)
+		return strings.Builder{}, fmt.Errorf("error fetching the list of Ollama models: %v", err)
 	}
 
 	modelExists := false
@@ -276,17 +273,15 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model, outDir s
 
 		err = client.Pull(ctx, modelReq, progressFunc)
 		if err != nil {
-			return fmt.Errorf("error installing AI model (if missing): %v", err)
+			return strings.Builder{}, fmt.Errorf("error installing AI model (if missing): %v", err)
 		}
 	}
 
 	// Prepare to generate response with Ollama
 	respReq := &ollama.GenerateRequest{
 		Model:  model,
-		Prompt: fmt.Sprintf(`My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s.`, formattedObligations, incomeFlt, goal),
+		Prompt: fmt.Sprintf(`My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s. `, formattedObligations, incomeFlt, goal),
 	}
-
-	var responseBuilder strings.Builder
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
@@ -298,10 +293,14 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model, outDir s
 	fmt.Printf("Communicating with AI...\n\n")
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
-		return fmt.Errorf("error generating AI response: %v", err)
+		return strings.Builder{}, fmt.Errorf("error generating AI response: %v", err)
 	}
 
-	// Create an output file and write goal and response
+	return responseBuilder, nil
+}
+
+// writeOutFile creates an output file and write goal and response
+func writeOutFile(outDir, goal string, excludeThink bool, responseBuilder strings.Builder) error {
 	now := time.Now()
 	outFileName := fmt.Sprintf("Obligation Advice %d-%d %dh %dm %ds.md",
 		now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
@@ -315,6 +314,12 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model, outDir s
 	fmt.Fprintf(outFile, "**Goal**: `%s`\n\n", goal)
 	output := responseBuilder.String()
 	if excludeThink {
+		// removeThinkTags removes all <think>...</think> blocks and any surrounding blank lines.
+		removeThinkTags := func(s string) string {
+			re := regexp.MustCompile(`(?m)(\s*\n)?<think>[\s\S]*?</think>(\s*\n)?`)
+			return re.ReplaceAllString(s, "")
+		}
+
 		output = removeThinkTags(output)
 	}
 	fmt.Fprint(outFile, output)
