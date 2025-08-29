@@ -8,7 +8,7 @@
             "presentation": {
                 "reveal": "never",
             },
-            "command": "rm -f .vscode/*.log"
+            "command": "rm -f ./*.txt"
         }
     ]
 }

@@ -6,9 +6,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	ollama "github.com/ollama/ollama/api"
 	"github.com/tealeg/xlsx"
@@ -28,8 +32,14 @@ type Obligation struct {
 	DayOfMonth       int     `json:"day_of_month,omitempty"`
 }
 
+var logger *log.Logger
+
 func main() {
 	const defaultGoal = "Determine a specific strategy including priorities & amounts to payoff my obligations as quickly & efficiently as possible without straining my monthly budget."
+
+	outFilePath, outFile, err := setupLoggerAndFile(defaultGoal)
+	checkErr(err)
+	defer outFile.Close()
 
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions).")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
@@ -53,6 +63,29 @@ func main() {
 	checkErr(err)
 }
 
+func setupLoggerAndFile(defaultGoal string) (outFilePath string, outFile *os.File, err error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", nil, err
+	}
+
+	dir := filepath.Dir(exePath)
+	timestamp := time.Now().Format("20060102_150405")
+	outFilePath = filepath.Join(dir, fmt.Sprintf("Obligation_Advice_%s.txt", timestamp))
+	outFile, err = os.Create(outFilePath)
+	if err != nil {
+		return "", nil, err
+	}
+
+	fmt.Printf("Output file written to: %s\n\n", outFilePath)
+
+	// Remove log prefix and flags for plain output (no timestamps or log levels)
+	multiWriter := io.MultiWriter(os.Stdout, outFile)
+	logger = log.New(multiWriter, "", 0)
+
+	return outFilePath, outFile, nil
+}
+
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
 // Then the value is stripped of special characters & assigned to a float to ensure it is valid.
 func determineIncome(income string) (incomeFlt float64, _ error) {
@@ -68,9 +101,9 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 		if err := scanner.Err(); err != nil {
 			return 0, fmt.Errorf("error reading income response: %v", err)
 		}
-	}
 
-	fmt.Println()
+		fmt.Println()
+	}
 
 	// Verify income is a valid dollar amount by convetting to Float64.
 	replacer := strings.NewReplacer("$", " ", ",", "")
@@ -224,7 +257,7 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
-// promptOllama sets up the connection with Ollama & generates a request/response to stdOut.
+// promptOllama sets up the connection with Ollama & generates a request/response to stdOut and a .txt file.
 func promptOllama(incomeFlt float64, formattedObligations, goal, model string) error {
 	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
@@ -273,8 +306,11 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		Prompt: fmt.Sprintf(`I make $%.2f a month. My financial obligtations in JSON format are %s. My goal is to %s. Stay focused on my goal.`, incomeFlt, formattedObligations, goal),
 	}
 
+	var responseBuilder strings.Builder
+
 	respFunc := func(resp ollama.GenerateResponse) error {
-		fmt.Print(resp.Response)
+		fmt.Print(resp.Response) // Stream to stdout as it arrives
+		responseBuilder.WriteString(resp.Response)
 		return nil
 	}
 
@@ -285,13 +321,15 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		return fmt.Errorf("error generating AI response: %v", err)
 	}
 
+	// Write the goal and response to the output file
+	logger.Printf("Goal: %s\n\n", goal)
+	logger.Print(responseBuilder.String())
+
 	return nil
 }
 
-// checkErr is a helper function to halt the program on error.
 func checkErr(err error) {
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logger.Fatalln(err)
 	}
 }

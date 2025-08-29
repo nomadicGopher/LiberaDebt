@@ -11,7 +11,7 @@
             "program": ".",
             "args": [
                 "-model=smollm2:135m",
-                "-income=$1,234",
+                "-income=$2,000",
                 "-goal=Determine a specific strategy including priorities & amounts to payoff my obligations as quickly & efficiently as possible without straining my monthly budget. ",
                 "-data=obligations_sample.xlsx"
             ]
