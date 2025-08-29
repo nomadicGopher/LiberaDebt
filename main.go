@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,9 +36,9 @@ type Obligation struct {
 var logger *log.Logger
 
 func main() {
-	const defaultGoal = "Determine a specific strategy including priorities & amounts to payoff my obligations as quickly & efficiently as possible without straining my monthly budget."
+	const defaultGoal = "Determine a specific prioritized strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible without straining my monthly budget"
 
-	outFilePath, outFile, err := setupLoggerAndFile(defaultGoal)
+	outFile, err := setupLoggerAndFile()
 	checkErr(err)
 	defer outFile.Close()
 
@@ -63,18 +64,18 @@ func main() {
 	checkErr(err)
 }
 
-func setupLoggerAndFile(defaultGoal string) (outFilePath string, outFile *os.File, err error) {
+func setupLoggerAndFile() (outFile *os.File, err error) {
 	exePath, err := os.Executable()
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	dir := filepath.Dir(exePath)
 	timestamp := time.Now().Format("20060102_150405")
-	outFilePath = filepath.Join(dir, fmt.Sprintf("Obligation_Advice_%s.txt", timestamp))
+	outFilePath := filepath.Join(dir, fmt.Sprintf("Obligation_Advice_%s.txt", timestamp))
 	outFile, err = os.Create(outFilePath)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	fmt.Printf("Output file written to: %s\n\n", outFilePath)
@@ -83,7 +84,7 @@ func setupLoggerAndFile(defaultGoal string) (outFilePath string, outFile *os.Fil
 	multiWriter := io.MultiWriter(os.Stdout, outFile)
 	logger = log.New(multiWriter, "", 0)
 
-	return outFilePath, outFile, nil
+	return outFile, nil
 }
 
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
@@ -257,6 +258,12 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
+// removeThinkTags removes all <think>...</think> blocks and any surrounding blank lines.
+func removeThinkTags(s string) string {
+	re := regexp.MustCompile(`(?m)(\s*\n)?<think>[\s\S]*?</think>(\s*\n)?`)
+	return re.ReplaceAllString(s, "")
+}
+
 // promptOllama sets up the connection with Ollama & generates a request/response to stdOut and a .txt file.
 func promptOllama(incomeFlt float64, formattedObligations, goal, model string) error {
 	// Establish client & verify is running
@@ -303,7 +310,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 	// Generate response
 	respReq := &ollama.GenerateRequest{
 		Model:  model,
-		Prompt: fmt.Sprintf(`I make $%.2f a month. My financial obligtations in JSON format are %s. My goal is to %s. Stay focused on my goal.`, incomeFlt, formattedObligations, goal),
+		Prompt: fmt.Sprintf(`I make $%.2f a month. My financial obligtations are %s. Help me accomplish my goal to %s.`, incomeFlt, formattedObligations, goal),
 	}
 
 	var responseBuilder strings.Builder
@@ -323,7 +330,8 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 
 	// Write the goal and response to the output file
 	logger.Printf("Goal: %s\n\n", goal)
-	logger.Print(responseBuilder.String())
+	cleanedResponse := removeThinkTags(responseBuilder.String())
+	logger.Print(cleanedResponse)
 
 	return nil
 }

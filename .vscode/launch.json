@@ -10,9 +10,9 @@
             "preLaunchTask": "clean-up",
             "program": ".",
             "args": [
-                "-model=smollm2:135m",
+                //"-model=",
                 "-income=$2,000",
-                "-goal=Determine a specific strategy including priorities & amounts to payoff my obligations as quickly & efficiently as possible without straining my monthly budget. ",
+                "-goal=Determine a specific prioritized strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible without straining my monthly budget ",
                 "-data=obligations_sample.xlsx"
             ]
         }
