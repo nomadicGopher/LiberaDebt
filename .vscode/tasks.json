@@ -8,7 +8,7 @@
             "presentation": {
                 "reveal": "never",
             },
-            "command": "rm -f ./*.txt"
+            "command": "rm -f ./*.md"
         }
     ]
 }

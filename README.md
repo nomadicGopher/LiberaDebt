@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="thumbnail.png" alt="LiberaDebt" width="50%"/>
+   <img src="release/thumbnail.png" alt="LiberaDebt" width="50%"/>
 </p>
 
 # LiberaDebt

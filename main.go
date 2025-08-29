@@ -7,9 +7,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	ollama "github.com/ollama/ollama/api"
 	"github.com/tealeg/xlsx"
@@ -19,23 +21,27 @@ type Obligations struct {
 	Obligations []Obligation `json:"obligations"`
 }
 
+// Obligation is the columns associated with each row of data. Required vs Optional
+// is controlled via logic found in getObligations().
 type Obligation struct {
-	Description      string  `json:"description"`
-	Type             string  `json:"type"`
-	Institution      string  `json:"institution,omitempty"`
-	RemainingBalance float64 `json:"remaining_balance,omitempty"`
-	InterestRate     float64 `json:"interest_rate,omitempty"`
-	MonthlyPayment   float64 `json:"monthly_payment"`
-	DayOfMonth       int     `json:"day_of_month,omitempty"`
+	Description      string  `json:"description"`                 // Required
+	Type             string  `json:"type"`                        // Required
+	Institution      string  `json:"institution,omitempty"`       // Optional
+	RemainingBalance float64 `json:"remaining_balance,omitempty"` // Optional
+	InterestRate     float64 `json:"interest_rate,omitempty"`     // Optional
+	MonthlyPayment   float64 `json:"monthly_payment"`             // Required
+	DayOfMonth       int     `json:"day_of_month,omitempty"`      // Optional
 }
 
 func main() {
 	const defaultGoal = "Determine a specific prioritized strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible without straining my monthly budget"
 
+	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
-	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	model := flag.String("model", "deepseek-r1:1.5b", "What Large Language Model will be used via Ollama?")
+	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
+	outDir := flag.String("outDir", "./", "Directory to write the output file to.")
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
@@ -50,7 +56,7 @@ func main() {
 	formattedObligations, err := formatObligations(obligations)
 	checkErr(err)
 
-	err = promptOllama(incomeFlt, formattedObligations, *goal, *model)
+	err = promptOllama(incomeFlt, formattedObligations, *goal, *model, *outDir, *excludeThink)
 	checkErr(err)
 }
 
@@ -125,7 +131,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 	sheet := workBook.Sheets[0]
 
 	if len(sheet.Rows) < 2 {
-		return nil, fmt.Errorf("no obligations (data rows) exist in XLSX sheet")
+		return nil, fmt.Errorf("no obligations (rows of data) exist in XLSX sheet")
 	}
 
 	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
@@ -232,7 +238,7 @@ func removeThinkTags(s string) string {
 }
 
 // promptOllama sets up the connection with Ollama & generates a request/response to stdOut and a .txt file.
-func promptOllama(incomeFlt float64, formattedObligations, goal, model string) error {
+func promptOllama(incomeFlt float64, formattedObligations, goal, model, outDir string, excludeThink bool) error {
 	// Establish client & verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
@@ -274,10 +280,10 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		}
 	}
 
-	// Generate response
+	// Prepare to generate response with Ollama
 	respReq := &ollama.GenerateRequest{
 		Model:  model,
-		Prompt: fmt.Sprintf(`I make $%.2f a month. My financial obligtations are %s. Help me accomplish my goal to %s.`, incomeFlt, formattedObligations, goal),
+		Prompt: fmt.Sprintf(`My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s.`, formattedObligations, incomeFlt, goal),
 	}
 
 	var responseBuilder strings.Builder
@@ -288,12 +294,40 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) e
 		return nil
 	}
 
+	// Generate response with Ollama
 	fmt.Printf("Communicating with AI...\n\n")
-
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
 		return fmt.Errorf("error generating AI response: %v", err)
 	}
+
+	// Create an output file and write goal and response
+	now := time.Now()
+	outFileName := fmt.Sprintf("Obligation Advice %d-%d %dh %dm %ds.md",
+		now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+	outFilePath := filepath.Join(outDir, outFileName)
+	outFile, err := os.Create(outFilePath)
+	if err != nil {
+		return fmt.Errorf("could not create output file: %v", err)
+	}
+	defer outFile.Close()
+
+	fmt.Fprintf(outFile, "**Goal**: `%s`\n\n", goal)
+	output := responseBuilder.String()
+	if excludeThink {
+		output = removeThinkTags(output)
+	}
+	fmt.Fprint(outFile, output)
+
+	if outDir == "./" {
+		fullDir, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("could not get the current working directory: %v", err)
+		}
+		outFilePath = filepath.Join(fullDir, outFilePath)
+	}
+
+	fmt.Printf("\n\nOutput file written to: %s\n", outFilePath)
 
 	return nil
 }
