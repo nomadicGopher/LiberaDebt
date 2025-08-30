@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -34,7 +35,7 @@ type Obligation struct {
 }
 
 func main() {
-	const defaultGoal = "determine a strategy to payoff my loan(s) and credit card(s) as quickly & efficiently as possible"
+	const defaultGoal = "determine a strategy to payoff loans and credit cards efficiently over time"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
@@ -176,6 +177,12 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", xlsxRowNumber, err)
 			}
+			// Convert decimal to percent if value is less than or equal to 1
+			if interestRate <= 1.0 {
+				interestRate = interestRate * 100
+			}
+			// Round to 2 decimal places
+			interestRate = math.Round(interestRate*100) / 100
 		}
 
 		monthlyPayment, err := sheet.Rows[i].Cells[5].Float()
@@ -280,13 +287,17 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 	// Prepare to generate response with Ollama
 	guidelines := []string{
 		"be concise and actionable",
-		"provide prioritization and amounts for each obligation",
-		"ensure recommendations fit within the user's monthly budget",
-		"explain reasoning for each step",
-		"don't give the user formulas to calculate",
-		"if an expense comperable to leisure or fun doesnt exist, assume a maximum of 5-10 percent of income",
+		"while it is ok to consider all the data, only provide guidance for how to handle loans and credit cards. Don't tell the user how to manage expenses and bills",
+		"include prioritization and amounts for each loan and credit card with reasoning",
+		"ensure the strategy fits within the monthly budget",
+		"if an expense comperable to leisure or fun doesnt exist, assume a maximum of 5 - 10 percent of monthly income if it allows",
+		"keep in mind and don't confuse the difference between 'remaining balance' vs 'monthly payments'",
+		"monthly payments are more relevant than the remaining balance",
+		"don't give the user formulas to calculate on their own",
+		"contributions to principle vs interest is not available at this time",
+		"fixed vs variable interest rates are not relevant",
 	}
-	guidelinesText := strings.Join(guidelines, ", ")
+	guidelinesText := strings.Join(guidelines, " | ")
 
 	respReq := &ollama.GenerateRequest{
 		Model: model,
