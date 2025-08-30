@@ -138,60 +138,78 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		return nil, fmt.Errorf("no obligations (rows of data) exist in XLSX sheet")
 	}
 
-	for i := 1; i <= len(sheet.Rows); i++ { // skip header row
-		xlsxRowNumber := i + 1
+	// isRowEmpty checks if all cells in a row are empty.
+	isRowEmpty := func(row *xlsx.Row) bool {
+		for _, cell := range row.Cells {
+			if strings.TrimSpace(cell.Value) != "" {
+				return false
+			}
+		}
+		return true
+	}
 
-		// Ensure that required fields are populated with more than ""
-		if sheet.Rows[i].Cells[0].Value == "" &&
-			(sheet.Rows[i].Cells[1].Value != "" || len(sheet.Rows[i].Cells) > 2) {
-			return nil, fmt.Errorf("xlsx row %d, Description is required but is empty", xlsxRowNumber)
-		} else if sheet.Rows[i].Cells[0].Value == "" {
-			break // End of data despite number of rows in sheet since Description is required.
+	for i, row := range sheet.Rows[1:] { // skip header row
+		if isRowEmpty(row) {
+			continue
 		}
 
-		if sheet.Rows[i].Cells[1].Value == "" {
+		xlsxRowNumber := i + 1 // TODO: Validate with debugging
+
+		description := strings.TrimSpace(row.Cells[0].Value)      // Required
+		obligationType := strings.TrimSpace(row.Cells[1].Value)   // Required
+		institution := strings.TrimSpace(row.Cells[2].Value)      // Optional
+		remainingBalance := strings.TrimSpace(row.Cells[3].Value) // Optional
+		interestRate := strings.TrimSpace(row.Cells[4].Value)     // Optional
+		monthlyPayment := strings.TrimSpace(row.Cells[5].Value)   // Required
+		dayOfMonth := strings.TrimSpace(row.Cells[6].Value)       // Optional
+
+		// Ensure that required fields are populated with more than ""
+		if description == "" {
+			return nil, fmt.Errorf("xlsx row %d, Description is required but is empty", xlsxRowNumber)
+		}
+
+		if obligationType == "" {
 			return nil, fmt.Errorf("xlsx row %d, Type is required but is empty", xlsxRowNumber)
 		}
 
-		if sheet.Rows[i].Cells[5].Value == "" {
+		if monthlyPayment == "" {
 			return nil, fmt.Errorf("xlsx row %d, Monthly Amount is required but is empty", xlsxRowNumber)
 		}
 
 		// Ensure input values convert to their appropriate types
 		var (
-			institution                    string = sheet.Rows[i].Cells[2].String()
-			remainingBalance, interestRate float64
-			dayOfMonth                     int
-			err                            error
+			remainingBalanceFloat, interestRateFloat float64
+			dayOfMonthInt                            int
+			err                                      error
 		)
 
-		if sheet.Rows[i].Cells[3].Value != "" {
-			remainingBalance, err = sheet.Rows[i].Cells[3].Float()
+		if remainingBalance != "" {
+			remainingBalanceFloat, err = strconv.ParseFloat(remainingBalance, 64)
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
-		if sheet.Rows[i].Cells[4].Value != "" {
-			interestRate, err = sheet.Rows[i].Cells[4].Float()
+		if interestRate != "" {
+			interestRateFloat, err = strconv.ParseFloat(interestRate, 64)
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 			// Convert decimal to percent if value is less than or equal to 1
-			if interestRate <= 1.0 {
-				interestRate = interestRate * 100
+			if interestRateFloat <= 1.0 {
+				interestRateFloat = interestRateFloat * 100
 			}
 			// Round to 2 decimal places
-			interestRate = math.Round(interestRate*100) / 100
+			interestRateFloat = math.Round(interestRateFloat*100) / 100
 		}
 
-		monthlyPayment, err := sheet.Rows[i].Cells[5].Float()
+		monthlyPaymentFloat, err := strconv.ParseFloat(monthlyPayment, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error formatting Monthly Payment (required) from XLSX row %d: %v", xlsxRowNumber, err)
 		}
 
-		if sheet.Rows[i].Cells[4].Value != "" {
-			dayOfMonth, err = sheet.Rows[i].Cells[6].Int()
+		if dayOfMonth != "" {
+			dayOfMonthInt, err = strconv.Atoi(dayOfMonth)
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", xlsxRowNumber, err)
 			}
@@ -199,9 +217,9 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 
 		// Required Fields
 		obligation := Obligation{
-			Description:    sheet.Rows[i].Cells[0].String(),
-			Type:           sheet.Rows[i].Cells[1].String(),
-			MonthlyPayment: monthlyPayment,
+			Description:    description,
+			Type:           obligationType,
+			MonthlyPayment: monthlyPaymentFloat,
 		}
 
 		// Optional Fields
@@ -209,16 +227,16 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			obligation.Institution = institution
 		}
 
-		if remainingBalance != 0.00 {
-			obligation.RemainingBalance = remainingBalance
+		if remainingBalanceFloat != 0.00 {
+			obligation.RemainingBalance = remainingBalanceFloat
 		}
 
-		if interestRate != 0.00 {
-			obligation.InterestRate = interestRate
+		if interestRateFloat != 0.00 {
+			obligation.InterestRate = interestRateFloat
 		}
 
-		if dayOfMonth != 0 {
-			obligation.DayOfMonth = dayOfMonth
+		if dayOfMonthInt != 0 {
+			obligation.DayOfMonth = dayOfMonthInt
 		}
 
 		obligations = append(obligations, obligation)
