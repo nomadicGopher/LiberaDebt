@@ -153,7 +153,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			continue
 		}
 
-		xlsxRowNumber := i + 1 // TODO: Validate with debugging
+		xlsxRowNumber := i + 2
 
 		description := strings.TrimSpace(row.Cells[0].Value)      // Required
 		obligationType := strings.TrimSpace(row.Cells[1].Value)   // Required
