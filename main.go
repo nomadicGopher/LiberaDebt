@@ -27,20 +27,18 @@ type Obligations struct {
 type Obligation struct {
 	Description      string  `json:"description"`                 // Required
 	Type             string  `json:"type"`                        // Required
-	Institution      string  `json:"institution,omitempty"`       // Optional
 	RemainingBalance float64 `json:"remaining_balance,omitempty"` // Optional
 	InterestRate     float64 `json:"interest_rate,omitempty"`     // Optional
 	MonthlyPayment   float64 `json:"monthly_payment"`             // Required
-	DayOfMonth       int     `json:"day_of_month,omitempty"`      // Optional
 }
 
 func main() {
-	const defaultGoal = "determine a strategy to payoff loans and credit cards efficiently over time"
+	const defaultGoal = "determine a strategy to payoff loan(s) and credit card(s) efficiently over time"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
-	model := flag.String("model", "deepseek-r1:1.5b", "What Large Language Model will be used via Ollama?")
+	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
 	outDir := flag.String("outDir", "./", "Directory to write the output file to.")
 	flag.Parse()
@@ -157,11 +155,9 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 
 		description := strings.TrimSpace(row.Cells[0].Value)      // Required
 		obligationType := strings.TrimSpace(row.Cells[1].Value)   // Required
-		institution := strings.TrimSpace(row.Cells[2].Value)      // Optional
-		remainingBalance := strings.TrimSpace(row.Cells[3].Value) // Optional
-		interestRate := strings.TrimSpace(row.Cells[4].Value)     // Optional
-		monthlyPayment := strings.TrimSpace(row.Cells[5].Value)   // Required
-		dayOfMonth := strings.TrimSpace(row.Cells[6].Value)       // Optional
+		remainingBalance := strings.TrimSpace(row.Cells[2].Value) // Optional
+		interestRate := strings.TrimSpace(row.Cells[3].Value)     // Optional
+		monthlyPayment := strings.TrimSpace(row.Cells[4].Value)   // Required
 
 		// Ensure that required fields are populated with more than ""
 		if description == "" {
@@ -179,7 +175,6 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		// Ensure input values convert to their appropriate types
 		var (
 			remainingBalanceFloat, interestRateFloat float64
-			dayOfMonthInt                            int
 			err                                      error
 		)
 
@@ -208,13 +203,6 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			return nil, fmt.Errorf("error formatting Monthly Payment (required) from XLSX row %d: %v", xlsxRowNumber, err)
 		}
 
-		if dayOfMonth != "" {
-			dayOfMonthInt, err = strconv.Atoi(dayOfMonth)
-			if err != nil {
-				return nil, fmt.Errorf("error formatting Day Of Month from XLSX row %d: %v", xlsxRowNumber, err)
-			}
-		}
-
 		// Required Fields
 		obligation := Obligation{
 			Description:    description,
@@ -223,20 +211,12 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		}
 
 		// Optional Fields
-		if institution != "" {
-			obligation.Institution = institution
-		}
-
 		if remainingBalanceFloat != 0.00 {
 			obligation.RemainingBalance = remainingBalanceFloat
 		}
 
 		if interestRateFloat != 0.00 {
 			obligation.InterestRate = interestRateFloat
-		}
-
-		if dayOfMonthInt != 0 {
-			obligation.DayOfMonth = dayOfMonthInt
 		}
 
 		obligations = append(obligations, obligation)
@@ -304,16 +284,16 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 
 	// Prepare to generate response with Ollama
 	guidelines := []string{
-		"be concise and actionable",
-		"while it is ok to consider all the data, only provide guidance for how to handle loans and credit cards. Don't tell the user how to manage expenses and bills",
-		"include prioritization and amounts for each loan and credit card with reasoning",
-		"ensure the strategy fits within the monthly budget",
-		"if an expense comperable to leisure or fun doesnt exist, assume a maximum of 5 - 10 percent of monthly income if it allows",
-		"keep in mind and don't confuse the difference between 'remaining balance' vs 'monthly payments'",
-		"monthly payments are more relevant than the remaining balance",
-		"don't give the user formulas to calculate on their own",
-		"contributions to principle vs interest is not available at this time",
-		"fixed vs variable interest rates are not relevant",
+		"be concise and provide only actionable steps",
+		"focus exclusively on loans and credit cards—do not give advice on managing expenses or bills",
+		"prioritize which loans and credit cards to pay off first, with specific amounts and clear reasoning for each",
+		"ensure the payoff strategy fits within the user's monthly budget",
+		"if no leisure/fun expense is listed, allocate up to 5-10 percent of monthly income for it, if affordable",
+		"clearly distinguish between 'remaining balance' (total owed) and 'monthly payments' (amount due each month)",
+		"base recommendations on monthly payments, not remaining balances",
+		"do not provide formulas or require the user to do calculations",
+		"ignore principal vs interest breakdowns—they are not available",
+		"ignore fixed vs variable interest rates—they are not relevant",
 	}
 	guidelinesText := strings.Join(guidelines, " | ")
 
@@ -324,7 +304,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 			formattedObligations, incomeFlt, goal, guidelinesText),
 	}
 
-	fmt.Println(respReq.Prompt)
+	// fmt.Printf("%s\n\n", respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
