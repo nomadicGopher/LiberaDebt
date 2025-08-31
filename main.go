@@ -32,9 +32,20 @@ type Obligation struct {
 	MonthlyPayment   float64 `json:"monthly_payment"`             // Required
 }
 
-func main() {
-	const defaultGoal = "determine a strategy to payoff loan(s) and credit card(s) efficiently over time"
+const defaultGoal = "Maximize leftover monthly budget and create the fastest, most effective plan to pay off all loans and credit cards"
 
+var guidelines = []string{
+	"give concise, actionable steps with precise dollar amounts and briefly explain your reasoning.",
+	"if no leisure/fun expense is listed, allocate up to 10 percent of monthly income if affordable and inform the user; otherwise, do not suggest changes to their leisure budget.",
+	"monthly payments represent a minimum payment per month, only suggest additional payments for loans and credit cards",
+	"ensure the payoff plan fully uses my monthly budget, allocating all remaining funds to loan or credit card payoff",
+	"do not include formulas or require user calculations",
+	"ignore principal contributions and interest rate types",
+	"do not include monthly expenses or bills in your response; they are for context only",
+	"ensure no loan or credit card payment is counted or allocated more than once in any transaction or calculation",
+}
+
+func main() {
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
@@ -283,25 +294,13 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 	}
 
 	// Prepare to generate response with Ollama
-	guidelines := []string{
-		"be concise and provide only actionable steps",
-		"focus exclusively on loans and credit cards—do not give advice on managing expenses or bills",
-		"prioritize which loans and credit cards to pay off first, with specific amounts and clear reasoning for each",
-		"ensure the payoff strategy fits within the user's monthly budget",
-		"if no leisure/fun expense is listed, allocate up to 5-10 percent of monthly income for it, if affordable",
-		"clearly distinguish between 'remaining balance' (total owed) and 'monthly payments' (amount due each month)",
-		"base recommendations on monthly payments, not remaining balances",
-		"do not provide formulas or require the user to do calculations",
-		"ignore principal vs interest breakdowns—they are not available",
-		"ignore fixed vs variable interest rates—they are not relevant",
-	}
-	guidelinesText := strings.Join(guidelines, " | ")
+	concatenatedGuidelines := strings.Join(guidelines, " | ")
 
 	respReq := &ollama.GenerateRequest{
 		Model: model,
 		Prompt: fmt.Sprintf(
-			"My financial obligtations are %s. I make $%.2f a month. Help me accomplish my goal to %s. Follow these guidelines: %s.",
-			formattedObligations, incomeFlt, goal, guidelinesText),
+			"My financial obligtations are %s. My monthly income is $%.2f. %s. Follow these guidelines: %s.",
+			formattedObligations, incomeFlt, goal, concatenatedGuidelines),
 	}
 
 	// fmt.Printf("%s\n\n", respReq.Prompt)
