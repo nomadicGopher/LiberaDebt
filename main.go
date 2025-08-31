@@ -43,6 +43,7 @@ var guidelines = []string{
 	"ignore principal contributions and interest rate types",
 	"do not include monthly expenses or bills in your response; they are for context only",
 	"ensure no loan or credit card payment is counted or allocated more than once in any transaction or calculation",
+	"focus only on the most financially efficient strategy, not all possible user preferences",
 }
 
 func main() {
