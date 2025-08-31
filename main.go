@@ -339,7 +339,6 @@ func writeOutFile(outDir, goal string, excludeThink bool, responseBuilder string
 	if excludeThink {
 		// removeThinkTags removes all <think>...</think> blocks and any surrounding blank lines.
 		removeThinkTags := func(s string) string {
-			// Remove all <think>...</think> blocks
 			re := regexp.MustCompile(`(?s)<think>.*?</think>`)
 			s = re.ReplaceAllString(s, "")
 			return strings.TrimSpace(s)
