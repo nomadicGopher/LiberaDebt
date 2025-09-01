@@ -312,11 +312,14 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 	}
 
 	// Generate response with Ollama
-	fmt.Printf("Communicating with AI...\n\n")
+	fmt.Printf("Communicating with Ollama...\n\n")
+	startTime := time.Now()
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
 		return strings.Builder{}, fmt.Errorf("error generating AI response: %v", err)
 	}
+	endTime := time.Now()
+	fmt.Printf("\n\nOllama response generated in %v.\n", endTime.Sub(startTime))
 
 	return responseBuilder, nil
 }
@@ -336,15 +339,14 @@ func writeOutFile(outDir, goal string, excludeThink bool, responseBuilder string
 	fmt.Fprintf(outFile, "**Goal**: `%s`\n\n", goal)
 	output := responseBuilder.String()
 	if excludeThink {
-		// removeThinkTags removes all <think>...</think> blocks and any surrounding blank lines.
-		removeThinkTags := func(s string) string {
-			re := regexp.MustCompile(`(?s)<think>.*?</think>`)
-			s = re.ReplaceAllString(s, "")
-			return strings.TrimSpace(s)
-		}
-
-		output = removeThinkTags(output)
+		// remove all <think>...</think> blocks and any surrounding blank lines.
+		re := regexp.MustCompile(`(?s)\s*<think>.*?</think>\s*`)
+		output = re.ReplaceAllString(output, "")
+	} else {
+		output = strings.ReplaceAll(output, "<think>", "---\n### Started thinking")
+		output = strings.ReplaceAll(output, "</think>", "### Ended thinking\n---")
 	}
+
 	fmt.Fprint(outFile, output)
 
 	if outDir == "./" {
