@@ -32,20 +32,9 @@ type Obligation struct {
 	MonthlyPayment   float64 `json:"monthly_payment"`             // Required
 }
 
-const defaultGoal = "Maximize leftover monthly budget and create the fastest, most effective plan to pay off all loans and credit cards"
-
-var guidelines = []string{
-	"give concise, actionable steps with precise dollar amounts and briefly explain your reasoning.",
-	"if no leisure/fun expense is listed, allocate up to 10 percent of monthly income if affordable and inform the user; otherwise, do not suggest changes to their leisure budget.",
-	"monthly payments represent a minimum payment per month, only suggest additional payments for loans and credit cards",
-	"ensure the payoff plan fully uses my monthly budget, allocating all remaining funds to loan or credit card payoff",
-	"do not include formulas or require user calculations",
-	"ignore principal contributions and interest rate types",
-	"do not include monthly expenses or bills in your response; they are for context only",
-	"ensure no loan or credit card payment is counted or allocated more than once in any transaction or calculation",
-}
-
 func main() {
+	const defaultGoal = "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards. Include short-term and long-term details."
+
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
@@ -294,16 +283,27 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 	}
 
 	// Prepare to generate response with Ollama
-	concatenatedGuidelines := strings.Join(guidelines, " | ")
-
 	respReq := &ollama.GenerateRequest{
 		Model: model,
-		Prompt: fmt.Sprintf(
-			"My financial obligtations are %s. My monthly income is $%.2f. %s. Follow these guidelines: %s.",
-			formattedObligations, incomeFlt, goal, concatenatedGuidelines),
+		Prompt: fmt.Sprintf(`You are a cost-efficient financial planner.
+My monthly income is $%.2f.
+My obligations are %s.
+If no comperable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
+%s.
+If no money is leftover, let the user know and assume this plan is for when additional funds are available.
+Provide concise, actionable steps with exact dollar amounts.
+Briefly explain your reasoning for each step.
+Only suggest extra payments for loans and credit cards.
+Do not consider user preferences or alternative scenarios; only provide the most efficient solution.
+Do not enumerate or compare multiple strategies.
+Do not respond with formulas or calculations for the user to perform.
+Do not list monthly expenses or bills in your response; they are for context only.
+Ignore the concepts of principal contributions as-well as fixed vs variable interest rate types.
+Ensure no loan or credit card payment is counted or allocated more than once in any transactions or calculations.`,
+			incomeFlt, formattedObligations, goal),
 	}
 
-	// fmt.Printf("%s\n\n", respReq.Prompt)
+	fmt.Printf("%s\n\n", respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives

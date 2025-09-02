@@ -12,7 +12,7 @@
             "args": [
                 "-data=.vscode/obligations_sample.xlsx",
                 "-income=2000",
-                "-goal=determine a strategy to payoff loan(s) and credit card(s) efficiently over time ",
+                "-goal=Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards ",
                 "-model=qwen3:0.6b",
                 //"-excludeThink=false",
                 //"-outDir=",
