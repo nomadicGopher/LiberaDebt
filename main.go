@@ -168,7 +168,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		}
 
 		if payment == "" {
-			return nil, fmt.Errorf("xlsx row %d, Monthly Amount is required but is empty", xlsxRowNumber)
+			return nil, fmt.Errorf("xlsx row %d, Minimum Monthly Payment is required but is empty", xlsxRowNumber)
 		}
 
 		// Ensure input values convert to their appropriate types
@@ -180,7 +180,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 		if balance != "" {
 			remainingBalanceFloat, err = strconv.ParseFloat(balance, 64)
 			if err != nil {
-				return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", xlsxRowNumber, err)
+				return nil, fmt.Errorf("error formatting Total Remaining Balance from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
@@ -349,13 +349,12 @@ func writeOutFile(dataPath, goal string, excludeThink bool, responseBuilder stri
 
 	fmt.Fprint(outFile, output)
 
-	switch dataDir {
-	case "./", ".", "":
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("could not get the current working directory: %v", err)
+	// Ensure outFilePath is absolute so the user knows exactly where the file was created
+	if !filepath.IsAbs(outFilePath) {
+		absPath, err := filepath.Abs(outFilePath)
+		if err == nil {
+			outFilePath = absPath
 		}
-		outFilePath = filepath.Join(currentDir, outFileName)
 	}
 
 	fmt.Printf("\nOutput file written to: %s\n", outFilePath)
