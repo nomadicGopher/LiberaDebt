@@ -37,7 +37,7 @@ func main() {
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
-	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
+	goal := flag.String("goal", defaultGoal, "User's financial goal for Ollama to provide advice for accomplishing.")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
 	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
@@ -277,7 +277,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 
 		err = client.Pull(ctx, modelReq, progressFunc)
 		if err != nil {
-			return strings.Builder{}, fmt.Errorf("error installing AI model (if missing): %v", err)
+			return strings.Builder{}, fmt.Errorf("error installing %s in Ollama model (if missing): %v", model, err)
 		}
 	}
 
@@ -315,10 +315,10 @@ Ensure no loan or credit card payment is counted or allocated more than once in 
 	startTime := time.Now()
 	err = client.Generate(ctx, respReq, respFunc)
 	if err != nil {
-		return strings.Builder{}, fmt.Errorf("error generating AI response: %v", err)
+		return strings.Builder{}, fmt.Errorf("error generating Ollama response: %v", err)
 	}
 	endTime := time.Now()
-	fmt.Printf("\n\nOllama response generated in %v.\n", endTime.Sub(startTime))
+	fmt.Printf("\n\nResponse generated in %v.\n", endTime.Sub(startTime))
 
 	return responseBuilder, nil
 }
@@ -327,7 +327,7 @@ Ensure no loan or credit card payment is counted or allocated more than once in 
 func writeOutFile(dataPath, goal string, excludeThink bool, responseBuilder strings.Builder) error {
 	now := time.Now()
 	outFileName := fmt.Sprintf("obligation_advice_%s.md",
-		now.Format("2006-01-02-15h-04m-05s"))
+		now.Format("2006-01-02_15-04-05"))
 	dataDir := filepath.Dir(dataPath)
 	outFilePath := filepath.Join(dataDir, outFileName)
 	outFile, err := os.Create(outFilePath)
