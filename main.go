@@ -33,13 +33,13 @@ type Obligation struct {
 }
 
 func main() {
-	const defaultGoal = "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards. Include short-term and long-term details."
+	const defaultGoal = "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
 	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
-	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
+	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
 	outDir := flag.String("outDir", "./", "Directory to write the output file to.")
 	flag.Parse()
 
@@ -291,7 +291,7 @@ My obligations are %s.
 If no comperable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
 %s.
 If no money is leftover, let the user know and assume this plan is for when additional funds are available.
-Provide concise, actionable steps with exact dollar amounts.
+Provide concise, actionable short-term and long-term steps with exact dollar amounts.
 Briefly explain your reasoning for each step.
 Only suggest extra payments for loans and credit cards.
 Do not consider user preferences or alternative scenarios; only provide the most efficient solution.
