@@ -25,11 +25,11 @@ type Obligations struct {
 // Obligation is the columns associated with each row of data. Required vs Optional
 // is controlled via logic found in getObligations().
 type Obligation struct {
-	Description      string  `json:"description"`                 // Required
-	Type             string  `json:"type"`                        // Required
-	RemainingBalance float64 `json:"remaining_balance,omitempty"` // Optional
-	InterestRate     float64 `json:"interest_rate,omitempty"`     // Optional
-	MonthlyPayment   float64 `json:"monthly_payment"`             // Required
+	Description string  `json:"description"`                       // Required
+	Type        string  `json:"type"`                              // Required
+	Balance     float64 `json:"total remaining balance,omitempty"` // Optional
+	Interest    float64 `json:"interest rate,omitempty"`           // Optional
+	Payment     float64 `json:"minimum monthly payment"`           // Required
 }
 
 func main() {
@@ -153,11 +153,11 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 
 		xlsxRowNumber := i + 2
 
-		description := strings.TrimSpace(row.Cells[0].Value)      // Required
-		obligationType := strings.TrimSpace(row.Cells[1].Value)   // Required
-		remainingBalance := strings.TrimSpace(row.Cells[2].Value) // Optional
-		interestRate := strings.TrimSpace(row.Cells[3].Value)     // Optional
-		monthlyPayment := strings.TrimSpace(row.Cells[4].Value)   // Required
+		description := strings.TrimSpace(row.Cells[0].Value)    // Required
+		obligationType := strings.TrimSpace(row.Cells[1].Value) // Required
+		balance := strings.TrimSpace(row.Cells[2].Value)        // Optional
+		interest := strings.TrimSpace(row.Cells[3].Value)       // Optional
+		payment := strings.TrimSpace(row.Cells[4].Value)        // Required
 
 		// Ensure that required fields are populated with more than ""
 		if description == "" {
@@ -168,7 +168,7 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			return nil, fmt.Errorf("xlsx row %d, Type is required but is empty", xlsxRowNumber)
 		}
 
-		if monthlyPayment == "" {
+		if payment == "" {
 			return nil, fmt.Errorf("xlsx row %d, Monthly Amount is required but is empty", xlsxRowNumber)
 		}
 
@@ -178,15 +178,15 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			err                                      error
 		)
 
-		if remainingBalance != "" {
-			remainingBalanceFloat, err = strconv.ParseFloat(remainingBalance, 64)
+		if balance != "" {
+			remainingBalanceFloat, err = strconv.ParseFloat(balance, 64)
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Remaining Balance from XLSX row %d: %v", xlsxRowNumber, err)
 			}
 		}
 
-		if interestRate != "" {
-			interestRateFloat, err = strconv.ParseFloat(interestRate, 64)
+		if interest != "" {
+			interestRateFloat, err = strconv.ParseFloat(interest, 64)
 			if err != nil {
 				return nil, fmt.Errorf("error formatting Interest Rate from XLSX row %d: %v", xlsxRowNumber, err)
 			}
@@ -198,25 +198,25 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			interestRateFloat = math.Round(interestRateFloat*100) / 100
 		}
 
-		monthlyPaymentFloat, err := strconv.ParseFloat(monthlyPayment, 64)
+		monthlyPaymentFloat, err := strconv.ParseFloat(payment, 64)
 		if err != nil {
 			return nil, fmt.Errorf("error formatting Monthly Payment (required) from XLSX row %d: %v", xlsxRowNumber, err)
 		}
 
 		// Required Fields
 		obligation := Obligation{
-			Description:    description,
-			Type:           obligationType,
-			MonthlyPayment: monthlyPaymentFloat,
+			Description: description,
+			Type:        obligationType,
+			Payment:     monthlyPaymentFloat,
 		}
 
 		// Optional Fields
 		if remainingBalanceFloat != 0.00 {
-			obligation.RemainingBalance = remainingBalanceFloat
+			obligation.Balance = remainingBalanceFloat
 		}
 
 		if interestRateFloat != 0.00 {
-			obligation.InterestRate = interestRateFloat
+			obligation.Interest = interestRateFloat
 		}
 
 		obligations = append(obligations, obligation)
