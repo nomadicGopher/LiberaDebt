@@ -25,7 +25,7 @@
 #.env
 
 # Output
-Obligation Advice*.md
+obligation*.md
 
 # Open files
 *lock*

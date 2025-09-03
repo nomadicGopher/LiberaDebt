@@ -40,7 +40,6 @@ func main() {
 	goal := flag.String("goal", defaultGoal, "User's financial goal for AI to provide advice for accomplishing.")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
 	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
-	outDir := flag.String("outDir", "./", "Directory to write the output file to.")
 	flag.Parse()
 
 	incomeFlt, err := determineIncome(*income)
@@ -58,7 +57,7 @@ func main() {
 	responseBuilder, err := promptOllama(incomeFlt, formattedObligations, *goal, *model)
 	checkErr(err)
 
-	err = writeOutFile(*outDir, *goal, *excludeThink, responseBuilder)
+	err = writeOutFile(*dataPath, *goal, *excludeThink, responseBuilder)
 	checkErr(err)
 }
 
@@ -288,7 +287,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 		Prompt: fmt.Sprintf(`You are a cost-efficient financial planner.
 My monthly income is $%.2f.
 My obligations are %s.
-If no comperable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
+If no comparable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
 %s.
 If no money is leftover, let the user know and assume this plan is for when additional funds are available.
 Provide concise, actionable short-term and long-term steps with exact dollar amounts.
@@ -298,12 +297,12 @@ Do not consider user preferences or alternative scenarios; only provide the most
 Do not enumerate or compare multiple strategies.
 Do not respond with formulas or calculations for the user to perform.
 Do not list monthly expenses or bills in your response; they are for context only.
-Ignore the concepts of principal contributions as-well as fixed vs variable interest rate types.
+Ignore the concepts of principal contributions as well as fixed vs variable interest rate types.
 Ensure no loan or credit card payment is counted or allocated more than once in any transactions or calculations.`,
 			incomeFlt, formattedObligations, goal),
 	}
 
-	fmt.Printf("%s\n\n", respReq.Prompt)
+	// fmt.Printf("%s\n\n", respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
@@ -324,12 +323,13 @@ Ensure no loan or credit card payment is counted or allocated more than once in 
 	return responseBuilder, nil
 }
 
-// writeOutFile creates an output file and write goal and response
-func writeOutFile(outDir, goal string, excludeThink bool, responseBuilder strings.Builder) error {
+// writeOutFile creates an output file and writes goal and response in the same directory as the data file
+func writeOutFile(dataPath, goal string, excludeThink bool, responseBuilder strings.Builder) error {
 	now := time.Now()
-	outFileName := fmt.Sprintf("Obligation Advice %d-%d %dh %dm %ds.md",
-		now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
-	outFilePath := filepath.Join(outDir, outFileName)
+	outFileName := fmt.Sprintf("obligation_advice_%s.md",
+		now.Format("2006-01-02-15h-04m-05s"))
+	dataDir := filepath.Dir(dataPath)
+	outFilePath := filepath.Join(dataDir, outFileName)
 	outFile, err := os.Create(outFilePath)
 	if err != nil {
 		return fmt.Errorf("could not create output file: %v", err)
@@ -349,15 +349,16 @@ func writeOutFile(outDir, goal string, excludeThink bool, responseBuilder string
 
 	fmt.Fprint(outFile, output)
 
-	if outDir == "./" {
-		fullDir, err := os.Getwd()
+	switch dataDir {
+	case "./", ".", "":
+		currentDir, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("could not get the current working directory: %v", err)
 		}
-		outFilePath = filepath.Join(fullDir, outFilePath)
+		outFilePath = filepath.Join(currentDir, outFileName)
 	}
 
-	fmt.Printf("\n\nOutput file written to: %s\n", outFilePath)
+	fmt.Printf("\nOutput file written to: %s\n", outFilePath)
 
 	return nil
 }

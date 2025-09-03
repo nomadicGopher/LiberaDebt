@@ -8,7 +8,7 @@
             "presentation": {
                 "reveal": "never",
             },
-            "command": "rm -f ./Obligation*.md"
+            "command": "rm -f .vscode/obligation*.md"
         }
     ]
 }
