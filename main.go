@@ -36,7 +36,7 @@ func main() {
 	const defaultGoal = "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	income := flag.String("income", "", "User's monthly income (after taxes & deductions). Exclude $ and , characters.")
+	income := flag.String("income", "", "User's monthly income (after taxes and deductions). Exclude $ and , characters.")
 	goal := flag.String("goal", defaultGoal, "User's financial goal for Ollama to provide advice for accomplishing.")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
 	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
@@ -62,11 +62,11 @@ func main() {
 }
 
 // determineIncome checks the stdIn flags for an income. If none is found then the user is prompted to enter one.
-// Then the value is stripped of special characters & assigned to a float to ensure it is valid.
+// Then the value is stripped of special characters and assigned to a float to ensure it is valid.
 func determineIncome(income string) (incomeFlt float64, _ error) {
 	// Check if flag was passed at runtime. If so, no need to prompt the user.
 	if income == "" {
-		fmt.Print("What is your monthly income (after taxes & deductions)? ")
+		fmt.Print("What is your monthly income (after taxes and deductions)? ")
 
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
@@ -80,7 +80,7 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 		fmt.Println()
 	}
 
-	// Verify income is a valid dollar amount by convetting to Float64.
+	// Verify income is a valid dollar amount by converting to Float64.
 	replacer := strings.NewReplacer("$", " ", ",", "")
 	income = replacer.Replace(income)
 
@@ -122,7 +122,7 @@ func determineGoal(goal, defaultGoal string) (string, error) {
 	return goal, nil
 }
 
-// getObligations fetches data from obligations.xlsx & reads them into memory for use in other functions.
+// getObligations fetches data from obligations.xlsx and reads them into memory for use in other functions.
 func getObligations(dataPath string) (obligations []Obligation, _ error) {
 	workBook, err := xlsx.OpenFile(dataPath)
 	if err != nil {
@@ -192,6 +192,12 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			// Convert decimal to percent if value is less than or equal to 1
 			if interestRateFloat <= 1.0 {
 				interestRateFloat = interestRateFloat * 100
+			} else {
+				fmt.Printf(
+					`Interest Rate of %.2f is above 100 percent or is formatted unexpectedly for row %d (Description: %s).
+If you are confident please file an issue at https://github.com/nomadicGopher/LiberaDebt/issues\n`,
+					interestRateFloat, xlsxRowNumber, description)
+				os.Exit(1)
 			}
 			// Round to 2 decimal places
 			interestRateFloat = math.Round(interestRateFloat*100) / 100
@@ -238,9 +244,9 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 	return formattedObligations, nil
 }
 
-// promptOllama sets up the connection with Ollama & generates a request/response to stdOut and a .txt file.
+// promptOllama sets up the connection with Ollama and generates a request/response to stdOut and a .txt file.
 func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (responseBuilder strings.Builder, _ error) {
-	// Establish client & verify is running
+	// Establish client and verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
 		return strings.Builder{}, fmt.Errorf("error creating an Ollama client: %v", err)
@@ -266,6 +272,25 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 		}
 	}
 	if !modelExists {
+		fmt.Printf(`%s was not found in your local Ollama models.
+If you do infact have the model installed (such as without a paremeter specified like 'qwen3' rather than 'qwen3:8b' which are technically the same), try running this program in the terminal with the -model flag set to your desired model name like 'LiberaDebt -model=qwen3'.
+Would you like to download %s now? (y/n): `, model, model)
+
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			input := strings.ToLower(scanner.Text())
+
+			switch input {
+			case "y", "yes":
+				// continue
+			default:
+				return strings.Builder{}, fmt.Errorf("exiting without downloading %s since the user didn't enter 'y' or 'yes'", model)
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return strings.Builder{}, fmt.Errorf("error reading model confirmation: %v", err)
+		}
+
 		modelReq := &ollama.PullRequest{
 			Model: model,
 		}
@@ -277,7 +302,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 
 		err = client.Pull(ctx, modelReq, progressFunc)
 		if err != nil {
-			return strings.Builder{}, fmt.Errorf("error installing %s in Ollama model (if missing): %v", model, err)
+			return strings.Builder{}, fmt.Errorf("error installing %s in Ollama: %v", model, err)
 		}
 	}
 
