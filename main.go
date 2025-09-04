@@ -193,9 +193,9 @@ func getObligations(dataPath string) (obligations []Obligation, _ error) {
 			if interestRateFloat <= 1.0 {
 				interestRateFloat = interestRateFloat * 100
 			} else {
-				return nil, fmt.Errorf(
-					"Interest Rate of %.2f is above 100 percent or is formatted unexpectedly for row %d (Description: %s). If you are confident please file an issue at https://github.com/nomadicGopher/LiberaDebt/issues",
-					interestRateFloat, xlsxRowNumber, description)
+				return nil, fmt.Errorf("interest rate of %.2f is above 100 percent or is formatted unexpectedly for "+
+					"row %d (Description: %s). If you are confident please file an issue at "+
+					"https://github.com/nomadicGopher/LiberaDebt/issues", interestRateFloat, xlsxRowNumber, description)
 			}
 			// Round to 2 decimal places
 			interestRateFloat = math.Round(interestRateFloat*100) / 100
