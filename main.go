@@ -25,11 +25,11 @@ type Obligations struct {
 // Obligation is the columns associated with each row of data. Required vs Optional
 // is controlled via logic found in getObligations().
 type Obligation struct {
-	Description string  `json:"description"`                       // Required
-	Type        string  `json:"type"`                              // Required
-	Balance     float64 `json:"total remaining balance,omitempty"` // Optional
-	Interest    float64 `json:"interest rate,omitempty"`           // Optional
-	Payment     float64 `json:"minimum monthly payment"`           // Required
+	Description string  `json:"Description"`                       // Required
+	Type        string  `json:"Type"`                              // Required
+	Balance     float64 `json:"Total Remaining Balance,omitempty"` // Optional
+	Interest    float64 `json:"Interest Rate %,omitempty"`         // Optional
+	Payment     float64 `json:"Minimum Monthly Payment"`           // Required
 }
 
 func main() {
@@ -302,7 +302,7 @@ Ensure no loan or credit card payment is counted or allocated more than once in 
 			incomeFlt, formattedObligations, goal),
 	}
 
-	// fmt.Printf("%s\n\n", respReq.Prompt)
+	fmt.Printf("%s\n\n", respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
