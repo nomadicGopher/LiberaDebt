@@ -10,10 +10,12 @@
             "preLaunchTask": "clean-up",
             "program": ".",
             "args": [
-                "-model=smollm2:135m",
-                "-income=$1,500",
-                "-goal=Pay off debt as quickly and efficiently as possible while not straining my monthly budget. ",
-                "-data=obligations_sample.xlsx"
+                "-data=.vscode/obligations_sample.xlsx",
+                "-income=2000",
+                "-goal=Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards ",
+                "-excludeThink=false",
+                "-model=qwen3:0.6b",
+                //"-outDir=",
             ]
         }
     ]
