@@ -1,7 +1,4 @@
 #!/bin/bash
+rm -f ./obligation*.md
 
-rm -f ./*.log
-
-cd ..
-
-go run . -model="smollm2:135m" -data="obligations_sample.xlsx" #-income="\$1,234" -goal="Pay off debt as quickly and efficiently as possible while not straining my monthly budget. "
+go run ../. -data="obligations_sample.xlsx" -income="2000" -goal="Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards " -excludeThink=false -model="qwen3:0.6b" #-outDir=""

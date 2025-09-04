@@ -1,33 +1,37 @@
 <p align="center">
-   <img src="thumbnail.png" alt="LiberaDebt" width="50%"/>
+   <img src="release/thumbnail.png" alt="LiberaDebt" width="50%"/>
 </p>
 
 # LiberaDebt
-A CLI app that passes your monthly financial obligations from an XLSX to Ollama to provide efficient payoff advice.
+A CLI app that takes your monthly financial obligations from an XLSX file and uses Ollama to provide efficient payoff advice.
 
 ## Pre-requisites
-* [**Ollama**](https://ollama.com)
+* [**Ollama**](https://ollama.com) must be installed and running via `ollama serve`
 
 ## Usage
 1. Download the [obligations.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations.xlsx) template file.
-    * _Column headers that include `*` are required, otherwise it will be optional_
-    * _Reference [obligations_sample.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations_sample.xlsx) as an example of how to use the template._
-2. Fill out the financial obligations XLSX sheet which will contain 1 row per monthly obligation whether it is a reoccuring bill, loan payment, lifestyle expense or credit card payment.
-    * Try to include as many obligations as possible like fuel, groceries, etc… so that the AI determines your remaining available balance accurately.
-4. After saving the data, ensure that the XLSX file is stored in the same directory as the LiberaDebt executable program when it is either double clicked or run via the command line. See below if a different storage location is desired.
+    * _Column headers with `*` are required; others are optional._
+    * _See [obligations_sample.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations_sample.xlsx) for an example of how to populate the data._
+2. Fill out the XLSX sheet with one row per monthly obligation (recurring bills, loan payments, lifestyle expenses, credit card payments, etc.).
+    * Include as many obligations as possible (fuel, groceries, etc.) so the AI can accurately determine your available balance.
+3. Save the XLSX file in the same directory as the LiberaDebt executable, or specify a custom path with the `-data` argument.
+4. Run the program:
+    * Double-click the executable, or
+    * Run from the command line with potential for arguments:
+      ```sh
+      LiberaDebt -data="/custom/path/to/obligations.xlsx" -income="3500"
+      ```
 
 ### Optional Command Line Arguments
-When running via the command line with… `LiberaDebt -arg -arg …`
-* `-data="/custom/path/to/file.xlsx"`
-    * **Default:** `./obligations.xlsx` (same directory as executable program)
-* `-income="your monthly income"`
-    * It doesn't matter if `$`, `,` or empty spaces are included.
-    * User is prompted when this is not provided.
-*	`-goal="your custom financial goal"`
-    * **Default:** Pay off debt as quickly and efficiently as possible while not straining my monthly budget.
- 	  *	User is prompted when this is not different from the default.
-*	`-model="get from the Ollama website"`
-    * **Default:** `deepseek-r1:1.5b`
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `-data` | Path to your obligations XLSX file. It can be named differently but must use the template provided | `./obligations.xlsx` (current working directory) |
+| `-income` | Your monthly income (after taxes & deductions). If not provided, you will be prompted to enter it.  _Avoid `$` if passing an argument since it will be treated as an environment variable. `$` is only acceptable if no argument is passed at runtime & you are prompted for an income. `,`, and spaces are acceptable regardless._ | _N/A_                                               |
+| `-goal` | Your custom financial goal. If not different from the default, you will be prompted to confirm or enter a new goal. | `Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards` |
+| `-model` | Ollama model to use (see [Ollama models](https://ollama.com/library)) | `qwen3:8b` |
+| `-excludeThink` | If true, removes `<think>...</think>` content from output file | `true` |
+
+&nbsp;
 
 ---
 
