@@ -23,7 +23,7 @@ type Obligations struct {
 	Obligations []Obligation `json:"obligations"`
 }
 
-// Obligation represents the columns associated with each row of data. FOr logic see getObligations().
+// Obligation represents the columns associated with each row of data. For logic see getObligations().
 type Obligation struct {
 	Description string  `json:"Description"`                       // Required
 	Type        string  `json:"Type"`                              // Required
