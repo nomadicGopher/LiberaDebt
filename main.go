@@ -275,8 +275,8 @@ func promptOllama(
 		}
 	}
 	if !modelExists {
-		fmt.Printf("%s was not found in your local Ollama models. If you do infact have the model installed (such as "+
-			"without a paremeter like 'qwen3' vs 'qwen3:8b' which are the same), you can run the program in the "+
+		fmt.Printf("%s was not found in your local Ollama models. If you do in fact have the model installed (such as "+
+			"without a parameter like 'qwen3' vs 'qwen3:8b' which are the same), you can run the program in the "+
 			"terminal with the -model flag set to your desired model name like: LiberaDebt -model=qwen3\n\n", model)
 		fmt.Printf("Would you like to download %s now? (y/n): ", model)
 
