@@ -18,12 +18,12 @@ import (
 	"github.com/tealeg/xlsx"
 )
 
+// Obligations represents a collection of financial obligations.
 type Obligations struct {
 	Obligations []Obligation `json:"obligations"`
 }
 
-// Obligation is the columns associated with each row of data. Required vs Optional
-// is controlled via logic found in getObligations().
+// Obligation represents the columns associated with each row of data. FOr logic see getObligations().
 type Obligation struct {
 	Description string  `json:"Description"`                       // Required
 	Type        string  `json:"Type"`                              // Required
@@ -33,11 +33,11 @@ type Obligation struct {
 }
 
 func main() {
-	const defaultGoal = "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards"
+	defaultGoal := "Provide a shortest-time payoff plan using any leftover budget for extra payments to loans and/or credit cards"
 
 	dataPath := flag.String("data", "./obligations.xlsx", "Full-path to financial obligations spreadsheet.")
-	income := flag.String("income", "", "User's monthly income (after taxes and deductions). Exclude $ and , characters.")
-	goal := flag.String("goal", defaultGoal, "User's financial goal for Ollama to provide advice for accomplishing.")
+	income := flag.String("income", "", "Monthly income (after taxes and deductions). Exclude $ and , characters.")
+	goal := flag.String("goal", defaultGoal, "Financial goal for Ollama to provide advice for accomplishing.")
 	excludeThink := flag.Bool("excludeThink", true, "true to remove thinking content from the output file, false to keep it.")
 	model := flag.String("model", "qwen3:8b", "What Large Language Model will be used via Ollama?")
 	flag.Parse()
@@ -93,8 +93,8 @@ func determineIncome(income string) (incomeFlt float64, _ error) {
 	return incomeFlt, nil
 }
 
-// determineGoal checks the stdIn flags for a non-default goal.
-// If it's still the default then the user is prompted for a new goal or to verify the default.
+// determineGoal checks the stdIn flags for a non-default goal. If it's still the default then the
+// user is prompted for a new goal or to verify the default.
 func determineGoal(goal, defaultGoal string) (string, error) {
 	// Check if flag was passed at runtime, if so no need to prompt the user.
 	if goal != defaultGoal {
@@ -245,7 +245,10 @@ func formatObligations(obligations []Obligation) (formattedObligations string, _
 }
 
 // promptOllama sets up the connection with Ollama and generates a request/response to stdOut and a .txt file.
-func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (responseBuilder strings.Builder, _ error) {
+func promptOllama(
+	incomeFlt float64,
+	formattedObligations, goal, model string,
+) (responseBuilder strings.Builder, _ error) {
 	// Establish client and verify is running
 	client, err := ollama.ClientFromEnvironment()
 	if err != nil {
@@ -256,7 +259,7 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 
 	err = client.Heartbeat(ctx)
 	if err != nil {
-		return strings.Builder{}, fmt.Errorf("error connecting to the Ollama server, ensure it's running elsewhere with $ ollama serve")
+		return strings.Builder{}, fmt.Errorf("error connecting to the Ollama server, ensure it's running with: ollama serve")
 	}
 
 	// Ensure model exists
@@ -272,9 +275,10 @@ func promptOllama(incomeFlt float64, formattedObligations, goal, model string) (
 		}
 	}
 	if !modelExists {
-		fmt.Printf(`%s was not found in your local Ollama models.
-If you do infact have the model installed (such as without a paremeter specified like 'qwen3' rather than 'qwen3:8b' which are technically the same), try running this program in the terminal with the -model flag set to your desired model name like 'LiberaDebt -model=qwen3'.
-Would you like to download %s now? (y/n): `, model, model)
+		fmt.Printf("%s was not found in your local Ollama models. If you do infact have the model installed (such as "+
+			"without a paremeter like 'qwen3' vs 'qwen3:8b' which are the same), you can run the program in the "+
+			"terminal with the -model flag set to your desired model name like: LiberaDebt -model=qwen3\n\n", model)
+		fmt.Printf("Would you like to download %s now? (y/n): ", model)
 
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
@@ -284,7 +288,7 @@ Would you like to download %s now? (y/n): `, model, model)
 			case "y", "yes":
 				// continue
 			default:
-				return strings.Builder{}, fmt.Errorf("exiting without downloading %s since the user didn't enter 'y' or 'yes'", model)
+				return strings.Builder{}, fmt.Errorf("exiting without downloading %s", model)
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -309,7 +313,8 @@ Would you like to download %s now? (y/n): `, model, model)
 	// Prepare to generate response with Ollama
 	respReq := &ollama.GenerateRequest{
 		Model: model,
-		Prompt: fmt.Sprintf(`You are a cost-efficient financial planner.
+		Prompt: fmt.Sprintf(
+			`You are a cost-efficient financial planner.
 My monthly income is $%.2f.
 My obligations are %s.
 If no comparable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
@@ -326,8 +331,6 @@ Ignore the concepts of principal contributions as well as fixed vs variable inte
 Ensure no loan or credit card payment is counted or allocated more than once in any transactions or calculations.`,
 			incomeFlt, formattedObligations, goal),
 	}
-
-	fmt.Printf("%s\n\n", respReq.Prompt)
 
 	respFunc := func(resp ollama.GenerateResponse) error {
 		fmt.Print(resp.Response) // Stream to stdout as it arrives
@@ -348,8 +351,12 @@ Ensure no loan or credit card payment is counted or allocated more than once in 
 	return responseBuilder, nil
 }
 
-// writeOutFile creates an output file and writes goal and response in the same directory as the data file
-func writeOutFile(dataPath, goal string, excludeThink bool, responseBuilder strings.Builder) error {
+// writeOutFile creates an output file and writes goal and response in the same directory as the data file.
+func writeOutFile(
+	dataPath, goal string,
+	excludeThink bool,
+	responseBuilder strings.Builder,
+) error {
 	now := time.Now()
 	outFileName := fmt.Sprintf("obligation_advice_%s.md",
 		now.Format("2006-01-02_15-04-05"))
@@ -387,6 +394,7 @@ func writeOutFile(dataPath, goal string, excludeThink bool, responseBuilder stri
 	return nil
 }
 
+// checkErr prints the error and exits the program if err is not nil.
 func checkErr(err error) {
 	if err != nil {
 		fmt.Println(err)
