@@ -317,7 +317,7 @@ func promptOllama(
 			`You are a cost-efficient financial planner.
 My monthly income is $%.2f.
 My obligations are %s.
-If no comparable leisure budget exists and at least 5 percent (x) of income remains, create a $x leisure expense.
+If no comparable leisure budget exists and at least 5 percent of income remains, create a 5 percent leisure expense.
 %s.
 If no money is leftover, let the user know and assume this plan is for when additional funds are available.
 Provide concise, actionable short-term and long-term steps with exact dollar amounts.
