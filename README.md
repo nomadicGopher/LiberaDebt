@@ -5,8 +5,17 @@
 # LiberaDebt
 A CLI app that takes your monthly financial obligations from an XLSX file and uses Ollama to provide efficient payoff advice.
 
+## Demo
+_In order to quickly demonstrate usability, the Ollama model for this demo was downsized from the default qwen3:8b to qwen3:0.6b. Be aware that the default (8b) will produce more accurate responses and may take longer depending on your hardware._
+
+<p align="center">
+   <img align="center" width="80%" src="release/Demo.gif">
+</p>
+
 ## Pre-requisites
 * [**Ollama**](https://ollama.com) must be installed and running via `ollama serve`
+* 8 GB of RAM (recommend 16 GB for better performance)
+* Recommend a GPU for better performance
 
 ## Usage
 1. Download the [obligations.xlsx](https://github.com/nomadicGopher/LiberaDebt/blob/main/obligations.xlsx) template file.
