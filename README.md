@@ -2,7 +2,7 @@
    <img src="release/thumbnail.png" alt="LiberaDebt" width="50%"/>
 </p>
 
-# LiberaDebt
+# LiberaDebt &nbsp; [![Go Report Card](https://goreportcard.com/badge/github.com/nomadicGopher/LiberaDebt)](https://goreportcard.com/report/github.com/nomadicGopher/LiberaDebt)
 A CLI app that takes your monthly financial obligations from an XLSX file and uses Ollama to provide efficient payoff advice.
 
 ## Demo
