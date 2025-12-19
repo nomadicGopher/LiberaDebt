@@ -3,7 +3,7 @@
 </p>
 
 # LiberaDebt &nbsp; [![Go Report Card](https://goreportcard.com/badge/github.com/nomadicGopher/LiberaDebt)](https://goreportcard.com/report/github.com/nomadicGopher/LiberaDebt)
-CLI tool to provide local LLM budget info & receive the most effective payoff recommendations.
+CLI tool to provide a local LLM budget info & receive the most effective payoff recommendations.
 
 ## Demo
 _In order to quickly demonstrate usability, the Ollama model for this demo was downsized from the default qwen3:8b to qwen3:0.6b. Be aware that the default (8b) will produce more accurate responses and may take longer depending on your hardware._
